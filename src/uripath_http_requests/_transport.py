@@ -4,6 +4,7 @@ not do: a caller's session with its adapters, authentication and cookies,
 
 from __future__ import annotations
 
+import collections.abc as _abc
 import errno as _errno
 import http.client as _client
 import importlib.util as _importutil
@@ -202,6 +203,9 @@ def _first_answer(found: _ty.Any) -> "str | None":
     if isinstance(found, str) or hasattr(found, "url"):
         return _proxy_url(found)
     try:
+        # A mapping would read as its first key.
+        if isinstance(found, _abc.Mapping):
+            raise TypeError
         items = iter(found)
     except TypeError:
         raise ValueError("a proxy is a URL or an object with a url") from None

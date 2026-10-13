@@ -273,7 +273,9 @@ def test_an_exception_of_the_provider_other_than_key_error_reaches_the_caller():
     assert raised.value is boom
 
 
-@pytest.mark.parametrize("answer", [3, object(), [3], [""], "   "])
+@pytest.mark.parametrize(
+    "answer", [3, object(), [3], [""], "   ", {"http": "http://127.0.0.1:9"}]
+)
 def test_an_answer_that_is_not_a_proxy_is_refused_before_anything_is_sent(answer):
     with Wire() as origin, RequestsTransport(proxies=Provider(answer)) as transport:
         with pytest.raises(ValueError):
