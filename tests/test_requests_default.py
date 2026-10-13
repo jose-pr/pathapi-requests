@@ -1,183 +1,140 @@
-"""Which transport a backend sends with when it is not given one: the built-in
-one, `requests` only when asked, and nothing imported that is not needed."""
+"""How `uripath` finds this transport: through the entry point this distribution
+declares, with nothing imported until it is used."""
 
+from __future__ import annotations
+
+import importlib.metadata as metadata
+import json
 import os
-import pathlib
 import subprocess
 import sys
 import textwrap
 
 import pytest
 
-import pathlib_next
-from http_fakes import FakeTransport, reply
-from pathlib_next.uri import UriPath
-from pathlib_next.uri.schemes._http import _select
-from pathlib_next.uri.schemes.http import (
-    HttpBackend,
-    HTTPTransport,
-    RequestsTransport,
-)
+from http_wire import Wire, response
+from uripath import URIPath, transports
+from uripath.schemes import HTTPBackend, HTTPTransport, RepoBackend
+from uripath_http_requests import RequestsTransport
 
-_SRC = pathlib.Path(__file__).resolve().parent.parent / "src"
-VARIABLE = "PATHLIB_NEXT_HTTP_TRANSPORT"
+VARIABLE = "URIPATH_HTTP_TRANSPORT"
 
 
-def test_without_a_setting_the_built_in_transport_is_used(monkeypatch):
-    monkeypatch.delenv(VARIABLE, raising=False)
-    with HttpBackend() as backend:
-        assert type(backend.transport) is HTTPTransport
-    assert type(UriPath("http://h/x").backend) is not None
+def _entry_points():
+    try:
+        return metadata.entry_points(group="uripath.http_transports")
+    except TypeError:  # Python 3.9
+        return metadata.entry_points().get("uripath.http_transports", ())
 
 
-def test_a_backend_builds_its_transport_on_first_use_and_keeps_it(monkeypatch):
-    monkeypatch.delenv(VARIABLE, raising=False)
-    with HttpBackend() as backend:
-        assert backend._transport is None
-        first = backend.transport
-        assert backend.transport is first
+def test_the_distribution_declares_the_requests_transport():
+    declared = {entry.name: entry.value for entry in _entry_points()}
+    assert declared["requests"] == "uripath_http_requests:RequestsTransport"
 
 
-def test_the_variable_chooses_the_transport(monkeypatch):
-    pytest.importorskip("requests")
+def test_uripath_lists_the_transport_and_loads_the_class_by_name():
+    assert transports.names() == ("builtin", "requests")
+    assert transports.get("requests") is RequestsTransport
+    assert transports.get("builtin") is HTTPTransport
+
+
+def test_the_variable_chooses_this_transport(monkeypatch):
     monkeypatch.setenv(VARIABLE, "requests")
-    with HttpBackend() as backend:
+    with HTTPBackend() as backend:
         assert type(backend.transport) is RequestsTransport
-    monkeypatch.setenv(VARIABLE, "builtin")
-    with HttpBackend() as backend:
-        assert type(backend.transport) is HTTPTransport
 
 
-@pytest.mark.parametrize("value", ["", "Requests", "BUILTIN", "urllib3", " builtin"])
-def test_a_value_that_is_not_a_choice_is_a_value_error_naming_the_choices(
-    monkeypatch, value
-):
-    monkeypatch.setenv(VARIABLE, value)
-    backend = HttpBackend()
-    with pytest.raises(ValueError) as excinfo:
-        backend.transport
-    message = str(excinfo.value)
-    assert VARIABLE in message and "'builtin'" in message and "'requests'" in message
-
-
-def test_a_path_reports_a_bad_setting_when_it_sends_not_when_it_is_built(monkeypatch):
-    monkeypatch.setenv(VARIABLE, "nonsense")
-    path = UriPath("http://127.0.0.1:1/x")
-    assert path.name == "x"
-    with pytest.raises(ValueError):
-        path.stat()
-
-
-def test_the_variable_in_the_header_is_the_one_the_code_reads():
-    header = (pathlib.Path(pathlib_next.__file__).parent / "AGENTS.md").read_text(
-        encoding="utf-8"
-    )
-    section = header.split("\n## Environment variables\n")[1]
-    assert _select.TRANSPORT_ENV == VARIABLE
-    assert f"### `{VARIABLE}`" in section
-
-
-def test_a_backend_closes_the_transport_it_built_and_not_one_it_was_given(monkeypatch):
-    monkeypatch.delenv(VARIABLE, raising=False)
-    given = FakeTransport(default=reply(200))
-    backend = HttpBackend(given)
-    backend.close()
-    assert given.closed == 0
-
-    built = HttpBackend()
-    transport = built.transport
+def test_a_backend_closes_the_session_of_the_transport_it_built(monkeypatch):
+    monkeypatch.setenv(VARIABLE, "requests")
+    backend = HTTPBackend()
     closed = []
-    transport.close = lambda: closed.append(True)
-    built.close()
-    built.close()
+    backend.transport.session.close = lambda: closed.append(True)
+    backend.close()
+    backend.close()
     assert closed == [True]
 
 
-def test_a_transport_is_an_object_with_a_send_method():
-    with pytest.raises(TypeError):
-        HttpBackend(object())
+def test_a_path_reads_through_the_transport_the_variable_names(monkeypatch):
+    monkeypatch.setenv(VARIABLE, "requests")
+    with Wire(lambda request: response(body=b"through requests")) as wire:
+        path = URIPath(wire.url + "/a.txt")
+        try:
+            assert path.read_bytes() == b"through requests"
+            assert type(path.backend.transport) is RequestsTransport
+        finally:
+            path.backend.close()
+    assert [r.target for r in wire.requests] == ["/a.txt"]
 
 
-# --- no third-party library ---------------------------------------------------
-
-_CHILD = """
-import http.server, sys, threading
-
-sys.modules["requests"] = None
-sys.modules["urllib3"] = None
-
-MULTISTATUS = (
-    '<?xml version="1.0"?><D:multistatus xmlns:D="DAV:"><D:response>'
-    "<D:href>/f.txt</D:href><D:propstat><D:prop><D:resourcetype/>"
-    "<D:getcontentlength>5</D:getcontentlength></D:prop>"
-    "<D:status>HTTP/1.1 200 OK</D:status></D:propstat></D:response>"
-    "</D:multistatus>"
-).encode()
+def test_the_default_without_a_variable_is_still_the_built_in_transport(monkeypatch):
+    monkeypatch.delenv(VARIABLE, raising=False)
+    with HTTPBackend() as backend:
+        assert type(backend.transport) is HTTPTransport
 
 
-class Handler(http.server.BaseHTTPRequestHandler):
-    protocol_version = "HTTP/1.1"
+def test_a_repository_backend_built_from_a_session_sends_through_this_transport():
+    import requests
 
-    def log_message(self, *args):
-        pass
-
-    def reply(self, status, body, kind="application/octet-stream"):
-        self.send_response(status)
-        self.send_header("Content-Type", kind)
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        if self.command != "HEAD":
-            self.wfile.write(body)
-
-    def do_GET(self):
-        if self.path.startswith("/repos/"):
-            self.reply(200, b"from github")
-        else:
-            self.reply(200, b"hello")
-
-    do_HEAD = do_GET
-
-    def do_PROPFIND(self):
-        self.rfile.read(int(self.headers.get("Content-Length") or 0))
-        self.reply(207, MULTISTATUS, "application/xml")
+    with requests.Session() as session:
+        backend = RepoBackend(session=session, verify=True)
+        assert type(backend.transport) is RequestsTransport
+        assert backend.transport.session is session
 
 
-server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-threading.Thread(target=server.serve_forever, daemon=True).start()
-host = "127.0.0.1:%d" % server.server_port
-
-from pathlib_next.uri import UriPath
-
-page = UriPath("http://" + host + "/f.txt")
-print(page.exists(), page.read_bytes(), page.stat().st_size)
-print(UriPath("dav://" + host + "/f.txt").stat().st_size)
-github = UriPath("github://github.com/o/r/f.txt")
-github.backend.api_base = "http://" + host
-print(github.read_bytes())
-print(sorted(m for m in ("requests", "urllib3") if sys.modules.get(m) is not None))
-try:
-    page.with_session(None)
-except ImportError as error:
-    print(error)
-server.shutdown()
-server.server_close()
-"""
+def test_a_value_that_is_not_a_transport_names_the_choices(monkeypatch):
+    monkeypatch.setenv(VARIABLE, "Requests")
+    with pytest.raises(ValueError) as raised:
+        HTTPBackend().transport
+    assert "expected one of 'builtin', 'requests'" in str(raised.value)
 
 
-def test_http_dav_and_git_work_with_requests_and_urllib3_hidden():
+# --- nothing is imported before it is used -----------------------------------
+
+
+def _child(code):
     env = dict(os.environ)
-    env["PYTHONPATH"] = os.pathsep.join(
-        filter(None, [str(_SRC), env.get("PYTHONPATH")])
-    )
     env.pop(VARIABLE, None)
     result = subprocess.run(
-        [sys.executable, "-c", textwrap.dedent(_CHILD)],
+        [sys.executable, "-c", textwrap.dedent(code)],
         capture_output=True,
         text=True,
         timeout=120,
         env=env,
     )
     assert result.returncode == 0, result.stderr
-    lines = result.stdout.splitlines()
-    assert lines[:4] == ["True b'hello' 5", "5", "b'from github'", "[]"]
-    assert "pathlib-next[http]" in lines[4]
+    return json.loads(result.stdout.strip().splitlines()[-1])
+
+
+def test_importing_the_package_or_listing_the_transports_imports_no_client_library():
+    found = _child("""
+        import json, sys
+        import uripath_http_requests
+        from uripath import transports
+        transports.names()
+        print(json.dumps(sorted(m for m in ("requests", "urllib3", "socks") if m in sys.modules)))
+        """)
+    assert found == []
+
+
+def test_building_the_transport_imports_requests():
+    found = _child("""
+        import json, sys
+        from uripath import transports
+        transports.get("requests")()
+        print(json.dumps("requests" in sys.modules))
+        """)
+    assert found is True
+
+
+def test_without_the_requests_library_building_the_transport_names_this_distribution():
+    found = _child("""
+        import json, sys
+        sys.modules["requests"] = None
+        from uripath import transports
+        try:
+            transports.get("requests")()
+        except ImportError as error:
+            print(json.dumps([str(error), error.name]))
+        """)
+    assert "uripath-http-requests" in found[0]
+    assert found[1] == "requests"
