@@ -40,11 +40,16 @@ def test_a_session_the_transport_made_is_closed_with_it():
 
 
 def test_a_session_of_the_caller_is_left_open_and_still_works():
+    closed = []
     with Wire() as wire, requests.Session() as session:
+        session.close = lambda: closed.append(True)
         with RequestsTransport(session) as transport:
             assert send(transport, wire.url + "/a").read() == b"ok"
+        transport.close()
+        assert closed == []
         assert transport.session is session
         assert session.get(wire.url + "/b", timeout=5).content == b"ok"
+        del session.close
     assert [r.target for r in wire.requests] == ["/a", "/b"]
 
 
