@@ -5,6 +5,7 @@ transport keeps are run from `uripath` by `test_uripath_suite.py`."""
 
 from __future__ import annotations
 
+import gc
 import io
 import os
 import ssl
@@ -51,6 +52,44 @@ def test_a_session_of_the_caller_is_left_open_and_still_works():
         assert session.get(wire.url + "/b", timeout=5).content == b"ok"
         del session.close
     assert [r.target for r in wire.requests] == ["/a", "/b"]
+
+
+def test_a_session_the_transport_made_is_closed_when_the_transport_is_collected():
+    transport = RequestsTransport()
+    closed = []
+    transport.session.get_adapter("http://127.0.0.1/").close = lambda: closed.append(
+        True
+    )
+    del transport
+    gc.collect()
+    assert closed == [True]
+
+
+def test_a_session_of_the_caller_is_not_closed_when_the_transport_is_collected():
+    closed = []
+    with requests.Session() as session:
+        session.get_adapter("http://127.0.0.1/").close = lambda: closed.append(True)
+        transport = RequestsTransport(session)
+        del transport
+        gc.collect()
+        assert closed == []
+
+
+def test_a_reply_that_is_open_keeps_the_session_of_its_transport_open():
+    closed = []
+    with Wire(lambda request: response(body=b"a" * 100)) as wire:
+        transport = RequestsTransport()
+        transport.session.get_adapter(wire.url).close = lambda: closed.append(True)
+        reply = send(transport, wire.url + "/", stream=True)
+        del transport
+        gc.collect()
+        assert closed == []
+        assert reply.read(10) == b"a" * 10
+        assert reply.read() == b"a" * 90
+        reply.close()
+        del reply
+        gc.collect()
+        assert closed == [True]
 
 
 def test_leaving_the_with_block_closes_a_session_it_made():

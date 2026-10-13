@@ -27,6 +27,9 @@ about it.
   that answers a proxy (a URL, or an object with a `url`), `None` for no proxy,
   or an iterable of them, of which the first is used. `KeyError` leaves the
   decision to `requests`.
+- A session the transport made is closed when the transport is collected, and a
+  response that is still open keeps its transport alive, so a dropped transport
+  leaves no sockets to the garbage collector on any `urllib3`.
 - A `socks4:`, `socks5:` or `socks5h:` proxy without PySocks raises
   `OSError(EPROTONOSUPPORT)` naming `uripath-http-requests[socks]`.
 - The tests `uripath` runs over its own transport run over this one

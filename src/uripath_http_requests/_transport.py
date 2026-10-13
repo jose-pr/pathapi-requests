@@ -11,6 +11,7 @@ import ssl as _ssl
 import threading as _threading
 import typing as _ty
 import urllib.parse as _urlparse
+import weakref as _weakref
 
 from uripath.schemes import HTTPResponse
 from uripath.transports import prepare_request
@@ -102,7 +103,10 @@ def _find(error: BaseException, kind: type) -> "BaseException | None":
 class _Body:
     """The raw (still encoded) body of a `requests` response."""
 
-    def __init__(self, response, expected: "int | None"):
+    def __init__(self, owner, response, expected: "int | None"):
+        # The transport stays alive while its reply is open: collecting it
+        # would close the session the reply is reading from.
+        self._owner = owner
         self._response = response
         self._expected = expected
         self._received = 0
@@ -235,6 +239,10 @@ class RequestsTransport:
             raise TypeError("a session is an object with a request() method")
         self._owns_session = session is None
         self.session = session if session is not None else self._requests.Session()
+        if self._owns_session:
+            # Without a finalizer an old `urllib3` leaves the sockets of a
+            # dropped session to the garbage collector.
+            self._finalizer = _weakref.finalize(self, self.session.close)
         self._provider = proxies
         self._args = requests_args
         self._pinned: "tuple | None" = None
@@ -250,9 +258,11 @@ class RequestsTransport:
         self.close()
 
     def close(self) -> None:
-        """Closes the session if this transport made it. Harmless when called
-        again."""
+        """Closes the session if this transport made it, and does so when the
+        transport is collected without having been closed. Harmless when
+        called again."""
         if self._owns_session:
+            self._finalizer.detach()
             self.session.close()
 
     def _failure(self, error) -> BaseException:
@@ -392,7 +402,7 @@ class RequestsTransport:
             response.reason,
             _header_pairs(response),
             getattr(response, "url", None) or request.url,
-            _Body(response, expected),
+            _Body(self, response, expected),
             decode=request.decode,
         )
         return result if stream else result.buffered()

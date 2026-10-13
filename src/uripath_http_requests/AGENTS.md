@@ -57,6 +57,8 @@ and SOCKS proxies.
   attribute `session` is the one in use. `close()` closes a session this
   transport made and leaves a caller's open, so a session passed in is still
   usable afterwards. The transport is a context manager that calls `close()`.
+  A session the transport made is also closed when the transport is collected,
+  and a response that is still open keeps its transport alive.
 - **`proxies`** — `None` leaves `requests` to read its session and the
   environment (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`). Otherwise
   an object that is indexed with the request URL (no fragment), as the
@@ -122,6 +124,7 @@ transport. `with_transport()` and `with_session()` do not read it.
 ## Gotchas
 
 `RequestsTransport()` builds a `requests.Session` the moment it is constructed;
-a session it made is closed by `close()`, by leaving a `with` block, and by
-nothing else, so a transport you build is yours to close. A backend closes only
-a transport it built itself, which is why `with_session()` does not close one.
+a session it made is closed by `close()`, by leaving a `with` block, and when the
+transport is collected, so a transport you build is yours to close. A backend
+closes only a transport it built itself, which is why `with_session()` does not
+close one.
