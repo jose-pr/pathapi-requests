@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+import errno
+
 import pytest
 import requests
 
 from http_wire import Wire, response
-from uripath import URIPath
+from uripath import URIPath, schemes
 from uripath.schemes import HTTPURIPath, RepoBackend
 from uripath_http_requests import RequestsTransport
 
@@ -137,3 +139,14 @@ def test_a_session_and_a_transport_together_are_refused():
     with RequestsTransport() as transport, requests.Session() as session:
         with pytest.raises(TypeError):
             RepoBackend(transport=transport, session=session)
+
+
+def test_a_reply_read_whole_is_capped_whatever_the_transport(monkeypatch):
+    monkeypatch.setattr(schemes, "MAX_LISTING_BYTES", 100)
+    with Wire(lambda request: response(body=b"x" * 500)) as wire:
+        with requests.Session() as session:
+            path = HTTPURIPath(wire.url + "/big").with_session(session, timeout=TIMEOUT)
+            with pytest.raises(OSError) as raised:
+                path.backend.request("GET", path, stream=False)
+            assert raised.value.errno == errno.EFBIG
+            assert path.backend.request("GET", path, stream=True).read() == b"x" * 500
