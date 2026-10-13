@@ -167,9 +167,7 @@ def main(argv=None) -> int:
         }
         args.results_dir.mkdir(parents=True, exist_ok=True)
         target = args.results_dir / f"{name}.json"
-        target.write_text(
-            json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n"
-        )
+        target.write_bytes((json.dumps(document, indent=2) + "\n").encode("utf-8"))
         print("wrote", target)
     return 0
 
