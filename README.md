@@ -57,10 +57,9 @@ import requests
 from pathlib_next.http import HTTPClient
 from pathlib_next_requests import RequestsTransport
 
-session = requests.Session()
-session.headers["X-Team"] = "storage"
-
-with HTTPClient(RequestsTransport(session), timeout=(3, 30)) as client:
+with requests.Session() as session:
+    session.headers["X-Team"] = "storage"
+    client = HTTPClient(RequestsTransport(session), timeout=(3, 30))
     reply = client.request("GET", "http://files.example.org/reports/today.txt")
     print(reply.read().decode())
 ```
