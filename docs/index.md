@@ -1,14 +1,14 @@
-# uripath-http-requests
+# pathlib-next-requests
 
-The **`requests` HTTP transport for [`uripath`](https://jose-pr.github.io/uripath/)**.
-`uripath` sends `http:`, `dav:`, `github:` and `gitlab:` requests with a
-transport built on the standard library; install this distribution and the same
-paths send through a `requests.Session` instead, with nothing to configure.
+The **`requests` HTTP transport for [`pathlib-next`](https://jose-pr.github.io/pathlib-next/)**.
+`pathlib_next.http` sends requests with a transport built on the standard
+library; install this distribution and the same `HTTPClient` sends through a
+`requests.Session` instead, with nothing to configure.
 
 ## Installation
 
 ```bash
-pip install uripath-http-requests
+pip install pathlib-next-requests
 ```
 
 | Extra | Adds | Needed for |
@@ -19,17 +19,19 @@ pip install uripath-http-requests
 
 ```python
 import requests
-from uripath import URIPath
+from pathlib_next.http import HTTPClient
+from pathlib_next_requests import RequestsTransport
 
 with requests.Session() as session:
     session.headers["X-Team"] = "storage"
-    path = URIPath("http://files.example.org/reports/today.txt").with_session(session)
-    print(path.read_text())
+    with HTTPClient(RequestsTransport(session)) as client:
+        reply = client.request("GET", "http://files.example.org/reports/today.txt")
+        print(reply.read().decode())
 ```
 
-`URIPATH_HTTP_TRANSPORT=requests` makes every path that was given no transport
-send through a new session. A proxy per URL, `~/.netrc`, `REQUESTS_CA_BUNDLE`
-and SOCKS proxies work as `requests` does them.
+`PATHLIB_NEXT_HTTP_TRANSPORT=requests` makes every `HTTPClient` that was given no
+transport send through a new session. A proxy per URL, `~/.netrc`,
+`REQUESTS_CA_BUNDLE` and SOCKS proxies work as `requests` does them.
 
 ## Learn more
 

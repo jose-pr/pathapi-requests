@@ -1,24 +1,25 @@
-# uripath-http-requests — contributor orientation
+# pathlib-next-requests — contributor orientation
 
 Orientation for working in a checkout of this repository: layout, environments,
 commands, CI and release. It is not the API reference and it does not ship.
 
 | Header | Covers |
 | --- | --- |
-| [`src/uripath_http_requests/AGENTS.md`](src/uripath_http_requests/AGENTS.md) | The public API: `RequestsTransport`, its arguments, what it guarantees and the variables it reads. It ships in the wheel, so it stays self-contained (no repo-relative links) and changes in the same commit as any public API change. |
+| [`src/pathlib_next_requests/AGENTS.md`](src/pathlib_next_requests/AGENTS.md) | The public API: `RequestsTransport`, its arguments, what it guarantees and the variables it reads. It ships in the wheel, so it stays self-contained (no repo-relative links) and changes in the same commit as any public API change. |
 
 The transport contract this package implements (`send()`, `close()`, the
-exceptions, the framing of a body) is documented in the header of `uripath`,
-<https://github.com/jose-pr/uripath>, and checked by tests that `uripath` ships
-(`python -m uripath.testing`), so the same promises bind every transport.
+exceptions, the framing of a body) is documented in the header of `pathlib-next`,
+<https://github.com/jose-pr/pathlib-next>, and checked by tests that `pathlib_next`
+ships (`python -m pathlib_next.http.testing`), so the same promises bind every
+transport.
 
 ## Layout
 
 | Path | Contents |
 | --- | --- |
-| `src/uripath_http_requests/` | The package (`src/` layout). `py.typed` and the API header ship with it. `__init__.py` exports `RequestsTransport` and `__version__`; the class is in `_transport.py`. |
-| `pyproject.toml` | The `requests` entry of the `uripath.http_transports` group, which is how `uripath` finds the class; the dependency ranges and the `socks` extra. |
-| `tests/` | The pytest suite. `tests/conftest.py` puts the loopback servers of `uripath`'s own tests (`http_wire`) on the path and keeps the run on this machine. `tests/test_uripath_suite.py` runs `python -m uripath.testing --http-transports requests`. |
+| `src/pathlib_next_requests/` | The package (`src/` layout). `py.typed` and the API header ship with it. `__init__.py` exports `RequestsTransport` and `__version__`; the class is in `_transport.py`. |
+| `pyproject.toml` | The `requests` entry of the `pathlib_next.http_transports` group, which is how `pathlib_next.http` finds the class; the dependency ranges and the `socks` extra. |
+| `tests/` | The pytest suite. `tests/conftest.py` puts the loopback servers of the transport suite of `pathlib_next` (`transport_wire`, `transport_guard`) on the path and keeps the run on this machine. `tests/test_transport_suite.py` runs `python -m pathlib_next.http.testing --http-transports requests`. |
 | `benchmarks/` | `bench.py` and committed JSON results; see [`benchmarks/README.md`](benchmarks/README.md). Not shipped. |
 | `examples/` | Runnable scripts; they start their own loopback server. |
 | `docs/`, `mkdocs.yml` | MkDocs site: hand-written pages plus a `mkdocstrings` API reference. |
@@ -42,10 +43,9 @@ python -m venv .venv/3.14-posix-x86_64
 On Windows the interpreter is `.venv\<name>\Scripts\python.exe`. `dev` holds the
 `socks` extra, the servers the tests use and the build tools.
 
-`uripath` 0.10 and `pathlib-next` 0.10 are dependencies. While they are not on
-PyPI, install both editable from their checkouts first (`pip install -e
-../pathlib-next -e ../uripath`), then this package. Edit `uripath` there and the
-tests see it at once.
+`pathlib-next` 0.10 is a dependency. While it is not on PyPI, install it
+editable from its checkout first (`pip install -e ../pathlib-next`), then this
+package. Edit `pathlib-next` there and the tests see it at once.
 
 A missing optional library does not fail the suite: its tests are skipped instead,
 so check `pytest -rs` before trusting a green run.
@@ -53,19 +53,18 @@ so check `pytest -rs` before trusting a green run.
 ## Checks
 
 ```bash
-python -m pytest -q -rs                              # full suite, the uripath transport suite included
-python -m pytest -q -rs -k "not uripath_suite"       # the suite without that run, which takes minutes
-python -m uripath.testing --http-transports requests -q   # that run by itself
+python -m pytest -q -rs                              # full suite, the pathlib_next transport suite included
+python -m pytest -q -rs -k "not transport_suite"     # the suite without that run
+python -m pathlib_next.http.testing --http-transports requests -q   # that run by itself
 python -m black src/ tests/ benchmarks/ examples/    # formatting; --check to verify
 mkdocs build --strict                                # docs must build with no warnings
 python -m build && python -m twine check dist/*      # sdist + wheel into dist/
 ```
 
-- **Tests block non-loopback network access** and starting any program but the
-  interpreter (`hermetic`, from the test files `uripath` ships, applied in
-  `tests/conftest.py`). Mark a test `@pytest.mark.allow_network` only when it
-  must resolve a real name. `filterwarnings = error` includes `ResourceWarning`:
-  close what a test opens.
+- **Tests block non-loopback network access** and remove the proxy, CA-bundle
+  and `.netrc` settings of the developer's shell (`transport_guard`, from the
+  test files `pathlib_next` ships, applied in `tests/conftest.py`).
+  `filterwarnings = error` includes `ResourceWarning`: close what a test opens.
 - A test asserts what the server received, not just that no exception was
   raised, and never asserts how fast something happened or how far an
   operation got.
@@ -87,7 +86,7 @@ Workflows live in `.github/workflows/`. They have not run on GitHub: the
 repository is not published yet.
 
 - `test.yml` runs on `workflow_dispatch` (inputs: `ref`, `pathlib_next_ref`,
-  `uripath_ref`, `benchmark`) or on a pushed `ci-*` tag, never on ordinary
+  `benchmark`) or on a pushed `ci-*` tag, never on ordinary
   pushes. To test a commit without the dashboard, push a uniquely named
   throwaway tag (`ci-<topic>-<timestamp>`), follow the run to completion, then
   delete the tag locally and on the remote. Jobs: `test` (Ubuntu on 3.9 to
@@ -98,23 +97,23 @@ repository is not published yet.
 - `release.yml` runs on a `v*` tag: test and `floors` gates, build (the tag must
   name the version built, `twine check`), an installed-wheel smoke test (the
   wheel imports without loading `requests`, ships its files, is found by
-  `uripath` through its entry point and sends a request), a strict docs build,
+  `pathlib_next.http` through its entry point and sends a request), a strict docs build,
   then the GitHub release whose notes come from that version's `CHANGELOG.md`
   section. For a final tag only (no `-` in it) it then publishes to PyPI through
   Trusted Publishing and dispatches `docs.yml` at the tag.
 - `docs.yml` owns every GitHub Pages deploy: on a push to `main` that touches the
   docs sources and on `workflow_dispatch`, which `release.yml` fires for a final
   tag.
-- **Which `pathlib-next` and `uripath` the jobs install.** Every job that
-  installs the package first installs `pathlib-next`, then `uripath`, from
-  `git+https://github.com/jose-pr/<name>@<ref>` when a ref is given: the
-  `pathlib_next_ref` and `uripath_ref` inputs of a manual run of `test.yml` or
-  `docs.yml`, else the repository variables `PATHLIB_NEXT_REF` and
-  `URIPATH_REF` (the only source for a `ci-*` tag and for `release.yml`). With
-  neither, pip takes the release ranges from PyPI. A ref must hold a version
-  inside its range. Set the variables while the releases are not on PyPI
-  (`gh variable set URIPATH_REF --body <branch-or-sha>`), delete them afterwards.
-  `release.yml` refuses a final tag while either is set.
+- **Which `pathlib-next` the jobs install.** Every job that installs the
+  package first installs `pathlib-next` from
+  `git+https://github.com/jose-pr/pathlib-next@<ref>` when a ref is given: the
+  `pathlib_next_ref` input of a manual run of `test.yml` or `docs.yml`, else the
+  repository variable `PATHLIB_NEXT_REF` (the only source for a `ci-*` tag and
+  for `release.yml`). With neither, pip takes the release range from PyPI. A ref
+  must hold a version inside the range (the floor, for the `floors` job). Set the
+  variable while the release is not on PyPI (`gh variable set PATHLIB_NEXT_REF
+  --body <branch-or-sha>`), delete it afterwards. `release.yml` refuses a final
+  tag while it is set.
 
 ## Conventions
 
@@ -152,16 +151,15 @@ repository is not published yet.
    it by exit code.
 5. Push `main`, then the `v*` tag. Publishing is irreversible, so the tag is
    pushed only with the maintainer's explicit consent for that specific
-   release. The releases the dependency ranges ask of `pathlib-next` and
-   `uripath` must be on PyPI first, and `PATHLIB_NEXT_REF` and `URIPATH_REF`
-   deleted.
+   release. The release the dependency range asks of `pathlib-next` must be on
+   PyPI first, and `PATHLIB_NEXT_REF` deleted.
 
 Once per repository, before the first release: create it on GitHub; register PyPI
-Trusted Publishing for the project `uripath-http-requests` (workflow
+Trusted Publishing for the project `pathlib-next-requests` (workflow
 `release.yml`, environment `pypi`); set Pages to build from GitHub Actions and
 allow `v*` tags in the `github-pages` environment
-(`gh api -X POST repos/jose-pr/uripath-http-requests/pages -f build_type=workflow`,
-`gh api -X POST repos/jose-pr/uripath-http-requests/environments/github-pages/deployment-branch-policies
+(`gh api -X POST repos/jose-pr/pathlib-next-requests/pages -f build_type=workflow`,
+`gh api -X POST repos/jose-pr/pathlib-next-requests/environments/github-pages/deployment-branch-policies
 -f name='v*' -f type=tag`); and let workflows write (Settings, Actions, General,
 Workflow permissions).
 

@@ -1,8 +1,8 @@
-site_name: uripath-http-requests
-site_description: The requests HTTP transport for uripath
-site_url: https://jose-pr.github.io/uripath-http-requests/
-repo_url: https://github.com/jose-pr/uripath-http-requests
-repo_name: jose-pr/uripath-http-requests
+site_name: pathlib-next-requests
+site_description: The requests HTTP transport for pathlib-next
+site_url: https://jose-pr.github.io/pathlib-next-requests/
+repo_url: https://github.com/jose-pr/pathlib-next-requests
+repo_name: jose-pr/pathlib-next-requests
 edit_uri: edit/main/docs/
 
 # Constrain the scan to docs/ so pymdownx.snippets + strict nav don't trip on
