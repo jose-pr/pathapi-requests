@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pathlib-next-requests"
-version = "0.10.0"
+version = "0.1.0"
 authors = [{ name = "Jose A" }]
 description = "The requests HTTP transport for pathlib-next: your own requests.Session, ~/.netrc, REQUESTS_CA_BUNDLE and SOCKS proxies"
 readme = "README.md"
