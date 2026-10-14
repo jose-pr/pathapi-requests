@@ -1,9 +1,9 @@
-"""The `requests` HTTP transport for `pathlib_next.http`.
+"""The `requests` HTTP transport for `pathapi.http`.
 
-Installing this distribution is enough: `pathlib_next.http` finds
+Installing this distribution is enough: `pathapi.http` finds
 `RequestsTransport` through the `requests` entry of its
-`pathlib_next.http_transports` group, so `HTTPClient(RequestsTransport(session))`
-and `PATHLIB_NEXT_HTTP_TRANSPORT=requests` send through it. `requests` is
+`pathapi.http_transports` group, so `HTTPClient(RequestsTransport(session))`
+and `PATHAPI_HTTP_TRANSPORT=requests` send through it. `requests` is
 imported when a transport is built, not when this package is.
 """
 

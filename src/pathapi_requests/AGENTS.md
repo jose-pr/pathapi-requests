@@ -1,26 +1,26 @@
-# `pathlib_next_requests` — public API header
+# `pathapi_requests` — public API header
 
-Header-file-style reference for the `pathlib_next_requests` package: every public
+Header-file-style reference for the `pathapi_requests` package: every public
 export with its signature, arguments, contract and gotchas, so the package can
 be used without reading its source. It ships inside the package and is
 self-contained. Development documentation lives with the source at
-<https://github.com/jose-pr/pathlib-next-requests>.
+<https://github.com/jose-pr/pathapi-requests>.
 
-Names are imported from `pathlib_next_requests`, which exports one class,
+Names are imported from `pathapi_requests`, which exports one class,
 `RequestsTransport`, and `__version__`. A module or name that starts with an
 underscore is private and nothing there is contract.
 
-`pip install pathlib-next-requests`. Required dependencies: `pathlib-next>=0.10.0,<0.11`
+`pip install pathapi-requests`. Required dependencies: `pathapi>=0.1.0,<0.2`
 and `requests>=2.22.0,<3`. The one extra, `socks`, adds `requests[socks]`
 (PySocks) for `socks4:`, `socks5:` and `socks5h:` proxies. `requests` is imported
 when a transport is built, not when this package is.
 
-`pathlib_next_requests.__version__` is the version of the installed
+`pathapi_requests.__version__` is the version of the installed
 distribution, read from its metadata. The rendered documentation is at
-<https://jose-pr.github.io/pathlib-next-requests/> and the project overview is the
-`README.md` shipped next to this file (`pathlib_next_requests/README.md`).
+<https://jose-pr.github.io/pathapi-requests/> and the project overview is the
+`README.md` shipped next to this file (`pathapi_requests/README.md`).
 
-## The `requests` transport (`pathlib_next_requests`)
+## The `requests` transport (`pathapi_requests`)
 
 ```python
 class RequestsTransport:
@@ -32,21 +32,21 @@ class RequestsTransport:
     def close(self) -> None: ...
 ```
 
-`RequestsTransport` is an HTTP transport for `pathlib_next.http` (the contract is
-"HTTP requests" in the `pathlib_next` header): `send()` makes one request with a
-`requests.Session` and returns a `pathlib_next.http.HTTPResponse`.
-`pathlib_next.http` finds it through the `requests` entry of its
-`pathlib_next.http_transports` entry-point group, which this distribution
+`RequestsTransport` is an HTTP transport for `pathapi.http` (the contract is
+"HTTP requests" in the `pathapi` header): `send()` makes one request with a
+`requests.Session` and returns a `pathapi.http.HTTPResponse`.
+`pathapi.http` finds it through the `requests` entry of its
+`pathapi.http_transports` entry-point group, which this distribution
 declares, so installing the distribution is all that is needed:
 
 - `HTTPClient(RequestsTransport(session, **requests_args))` sends every request
   of the client through the session; `session=None` makes a new session that the
   transport closes. The client follows the redirects, and never closes a
   transport it was given.
-- `PATHLIB_NEXT_HTTP_TRANSPORT=requests` makes every `HTTPClient` that was given
+- `PATHAPI_HTTP_TRANSPORT=requests` makes every `HTTPClient` that was given
   no transport build `RequestsTransport()`; so do
-  `pathlib_next.http.default_transport()` and
-  `pathlib_next.http.get_transport("requests")()`.
+  `pathapi.http.default_transport()` and
+  `pathapi.http.get_transport("requests")()`.
 
 Use it for what the built-in transport does not do: a session of your own with
 its mounted adapters, `auth` (basic, digest, NTLM, a token) and cookies;
@@ -63,7 +63,7 @@ and SOCKS proxies.
 - **`proxies`** — `None` leaves `requests` to read its session and the
   environment (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`). Otherwise
   an object that is indexed with the request URL (no fragment), as the
-  `proxies` of `pathlib_next.http.HTTPTransport` is. The answer is `None` (no
+  `proxies` of `pathapi.http.HTTPTransport` is. The answer is `None` (no
   proxy: direct, whatever the session and the environment say), a proxy, or an
   iterable of them; a proxy is a `str` URL or an object with a `url` attribute
   (and optionally `username` and `password`, used when the URL carries none). `requests`
@@ -77,7 +77,7 @@ and SOCKS proxies.
   direct"; here both leave the decision to `requests`.
 - **A `socks4:`, `socks5:` or `socks5h:` proxy** needs PySocks (the `socks`
   extra); without it the request raises `OSError(EPROTONOSUPPORT)` naming
-  `pathlib-next-requests[socks]`, and nothing is sent. `socks5h:` leaves the
+  `pathapi-requests[socks]`, and nothing is sent. `socks5h:` leaves the
   resolution of the host name to the proxy; `socks5:` resolves it first.
 - **`requests_args`** — keyword arguments passed to every `session.request()`:
   `verify`, `cert`, `auth`, `cookies`, `hooks`, ... `headers` are sent with
@@ -86,7 +86,7 @@ and SOCKS proxies.
   ignored.
 - **`send(method, url, *, headers, body=None, timeout, stream=False)`** is
   `HTTPTransport.send()`: `ValueError` before anything is sent for what
-  `pathlib_next.http.prepare_request()` refuses, one request and no redirect
+  `pathapi.http.prepare_request()` refuses, one request and no redirect
   followed (`allow_redirects=True` in `requests_args` changes nothing), and the
   response body read whole with `stream=False`. A reply below 200 is
   `OSError(EIO)` (`urllib3` skips only `100`).
@@ -105,22 +105,22 @@ and SOCKS proxies.
   proxy URL with credentials, is never passed on, and the exception is not
   chained. `repr()` shows nothing of the session or the arguments.
 
-`pathlib_next_requests.__version__` is a `str`.
+`pathapi_requests.__version__` is a `str`.
 
 ## Checking the transport
 
-`pathlib_next` ships the tests that hold a transport to the promises of the
+`pathapi` ships the tests that hold a transport to the promises of the
 built-in one. With this distribution and `pytest` installed:
 
 ```
-python -m pathlib_next.http.testing --http-transports requests -q
+python -m pathapi.http.testing --http-transports requests -q
 ```
 
 ## Environment variables
 
-### `PATHLIB_NEXT_HTTP_TRANSPORT`
+### `PATHAPI_HTTP_TRANSPORT`
 
-Read by `pathlib_next.http`. `requests` makes an `HTTPClient` that was given no
+Read by `pathapi.http`. `requests` makes an `HTTPClient` that was given no
 transport build `RequestsTransport()`. The name is case-sensitive, and one that
 no installed distribution declares is `ValueError` naming the choices.
 

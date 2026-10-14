@@ -8,9 +8,9 @@ import errno
 import pytest
 import requests
 
-import pathlib_next.http as http
-from pathlib_next.http import HTTPClient
-from pathlib_next_requests import RequestsTransport
+import pathapi.http as http
+from pathapi.http import HTTPClient
+from pathapi_requests import RequestsTransport
 from transport_wire import Wire, response
 
 TIMEOUT = (5, 5)

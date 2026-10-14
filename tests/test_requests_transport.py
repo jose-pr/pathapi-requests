@@ -13,7 +13,7 @@ import ssl
 import pytest
 import requests
 
-from pathlib_next_requests import RequestsTransport
+from pathapi_requests import RequestsTransport
 from transport_wire import Wire, make_authority, response
 
 TIMEOUT = (5, 5)

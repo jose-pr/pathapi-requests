@@ -8,8 +8,8 @@ import io
 import pytest
 import requests
 
-from pathlib_next.http import HTTPClient, raise_for_status, translate_errors
-from pathlib_next_requests import RequestsTransport
+from pathapi.http import HTTPClient, raise_for_status, translate_errors
+from pathapi_requests import RequestsTransport
 from transport_wire import Wire, response
 
 TIMEOUT = (5, 5)

@@ -13,7 +13,7 @@ import types
 import pytest
 import requests
 
-from pathlib_next_requests import RequestsTransport, _transport
+from pathapi_requests import RequestsTransport, _transport
 from transport_wire import Proxy, Wire, refusing_port, response
 
 TIMEOUT = (5, 5)
@@ -317,7 +317,7 @@ def test_a_socks_proxy_without_pysocks_names_the_extra(monkeypatch):
             with pytest.raises(OSError) as raised:
                 send(transport, origin.url + "/f")
     assert raised.value.errno == errno.EPROTONOSUPPORT
-    assert "pathlib-next-requests[socks]" in str(raised.value)
+    assert "pathapi-requests[socks]" in str(raised.value)
     assert "socks5h" in str(raised.value)
     assert origin.requests == []
 

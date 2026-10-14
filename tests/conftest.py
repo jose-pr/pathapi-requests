@@ -1,5 +1,5 @@
 """Keeps the test run on this machine and independent of it, and puts the
-loopback servers of the `pathlib_next` transport suite within reach.
+loopback servers of the `pathapi` transport suite within reach.
 
 Every connection that is not to the loopback interface raises, and the proxy,
 CA-bundle and `.netrc` settings of the developer's shell are not there to be
@@ -12,7 +12,7 @@ import tempfile
 
 import pytest
 
-from pathlib_next.http.testing import suite_directory
+from pathapi.http.testing import suite_directory
 
 # `transport_wire` (loopback servers scripted at the byte level) and
 # `transport_guard`.
@@ -22,7 +22,7 @@ import transport_guard  # noqa: E402
 
 
 def pytest_configure(config):
-    home = tempfile.TemporaryDirectory(prefix="pathlib-next-requests-home-")
+    home = tempfile.TemporaryDirectory(prefix="pathapi-requests-home-")
     patch = pytest.MonkeyPatch()
     transport_guard.isolate_environment(patch, home.name)
     config.add_cleanup(home.cleanup)
@@ -70,7 +70,7 @@ def _block_non_loopback_network(monkeypatch):
 @pytest.fixture
 def transport():
     """A `RequestsTransport` on a new session, closed after the test."""
-    from pathlib_next_requests import RequestsTransport
+    from pathapi_requests import RequestsTransport
 
     with RequestsTransport() as made:
         yield made

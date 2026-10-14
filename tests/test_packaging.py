@@ -1,5 +1,5 @@
 """The packaging manifest: dependency bounds, the entry point that is how
-`pathlib_next.http` finds the transport, and what the distributions leave out."""
+`pathapi.http` finds the transport, and what the distributions leave out."""
 
 from __future__ import annotations
 
@@ -52,17 +52,17 @@ def test_every_dependency_declares_a_ceiling(project):
     assert unbounded == []
 
 
-def test_the_runtime_dependencies_are_pathlib_next_and_requests(project):
+def test_the_runtime_dependencies_are_pathapi_and_requests(project):
     names = [
         packaging_requirements.Requirement(spec).name
         for spec in project["project"]["dependencies"]
     ]
-    assert names == ["pathlib-next", "requests"]
+    assert names == ["pathapi", "requests"]
 
 
-def test_the_installed_metadata_requires_pathlib_next_and_requests_only():
+def test_the_installed_metadata_requires_pathapi_and_requests_only():
     try:
-        requires = metadata.requires("pathlib-next-requests")
+        requires = metadata.requires("pathapi-requests")
     except metadata.PackageNotFoundError:
         pytest.skip("the distribution is not installed")
     names = {
@@ -70,15 +70,13 @@ def test_the_installed_metadata_requires_pathlib_next_and_requests_only():
         for spec in requires or ()
         if "extra ==" not in spec
     }
-    assert names == {"pathlib-next", "requests"}
+    assert names == {"pathapi", "requests"}
 
 
-def test_the_transport_is_declared_for_pathlib_next_to_find(project):
+def test_the_transport_is_declared_for_pathapi_to_find(project):
     entry_points = project["project"]["entry-points"]
     assert entry_points == {
-        "pathlib_next.http_transports": {
-            "requests": "pathlib_next_requests:RequestsTransport"
-        }
+        "pathapi.http_transports": {"requests": "pathapi_requests:RequestsTransport"}
     }
     assert "scripts" not in project["project"]
 
@@ -89,7 +87,7 @@ def test_the_one_extra_is_socks_and_dev_includes_it(project):
     assert [
         packaging_requirements.Requirement(spec).name for spec in extras["socks"]
     ] == ["requests"]
-    assert "pathlib-next-requests[socks]" in extras["dev"]
+    assert "pathapi-requests[socks]" in extras["dev"]
 
 
 def test_distributions_leave_out_the_contributor_notes_and_agent_config(project):

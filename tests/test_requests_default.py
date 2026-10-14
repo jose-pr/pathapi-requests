@@ -1,4 +1,4 @@
-"""How `pathlib_next.http` finds this transport: through the entry point this
+"""How `pathapi.http` finds this transport: through the entry point this
 distribution declares, with nothing imported until it is used."""
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import textwrap
 
 import pytest
 
-from pathlib_next.http import (
+from pathapi.http import (
     TRANSPORT_ENV,
     TRANSPORT_GROUP,
     HTTPClient,
@@ -21,7 +21,7 @@ from pathlib_next.http import (
     get_transport,
     transport_names,
 )
-from pathlib_next_requests import RequestsTransport
+from pathapi_requests import RequestsTransport
 from transport_wire import Wire, response
 
 
@@ -34,11 +34,11 @@ def _entry_points():
 
 def test_the_distribution_declares_the_requests_transport():
     declared = {entry.name: entry.value for entry in _entry_points()}
-    assert TRANSPORT_GROUP == "pathlib_next.http_transports"
-    assert declared["requests"] == "pathlib_next_requests:RequestsTransport"
+    assert TRANSPORT_GROUP == "pathapi.http_transports"
+    assert declared["requests"] == "pathapi_requests:RequestsTransport"
 
 
-def test_pathlib_next_lists_the_transport_and_loads_the_class_by_name():
+def test_pathapi_lists_the_transport_and_loads_the_class_by_name():
     assert transport_names() == ("builtin", "requests")
     assert get_transport("requests") is RequestsTransport
     assert get_transport("builtin") is HTTPTransport
@@ -46,7 +46,7 @@ def test_pathlib_next_lists_the_transport_and_loads_the_class_by_name():
 
 def test_the_variable_chooses_this_transport(monkeypatch):
     monkeypatch.setenv(TRANSPORT_ENV, "requests")
-    assert TRANSPORT_ENV == "PATHLIB_NEXT_HTTP_TRANSPORT"
+    assert TRANSPORT_ENV == "PATHAPI_HTTP_TRANSPORT"
     with default_transport() as transport:
         assert type(transport) is RequestsTransport
     with HTTPClient() as client:
@@ -117,8 +117,8 @@ def _child(code):
 def test_importing_the_package_or_listing_the_transports_imports_no_client_library():
     found = _child("""
         import json, sys
-        import pathlib_next_requests
-        from pathlib_next.http import transport_names
+        import pathapi_requests
+        from pathapi.http import transport_names
         transport_names()
         print(json.dumps(sorted(m for m in ("requests", "urllib3", "socks") if m in sys.modules)))
         """)
@@ -128,7 +128,7 @@ def test_importing_the_package_or_listing_the_transports_imports_no_client_libra
 def test_building_the_transport_imports_requests():
     found = _child("""
         import json, sys
-        from pathlib_next.http import get_transport
+        from pathapi.http import get_transport
         get_transport("requests")()
         print(json.dumps("requests" in sys.modules))
         """)
@@ -139,11 +139,11 @@ def test_without_the_requests_library_building_the_transport_names_this_distribu
     found = _child("""
         import json, sys
         sys.modules["requests"] = None
-        from pathlib_next.http import get_transport
+        from pathapi.http import get_transport
         try:
             get_transport("requests")()
         except ImportError as error:
             print(json.dumps([str(error), error.name]))
         """)
-    assert "pathlib-next-requests" in found[0]
+    assert "pathapi-requests" in found[0]
     assert found[1] == "requests"

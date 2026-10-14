@@ -11,8 +11,8 @@ import traceback
 import pytest
 import requests
 
-from pathlib_next.http import HTTPClient
-from pathlib_next_requests import RequestsTransport
+from pathapi.http import HTTPClient
+from pathapi_requests import RequestsTransport
 from transport_wire import Wire, refusing_port, response
 
 TIMEOUT = (5, 5)

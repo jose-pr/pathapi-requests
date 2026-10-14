@@ -1,4 +1,4 @@
-"""`requests` as an HTTP transport for `pathlib_next.http`, for what the built-in
+"""`requests` as an HTTP transport for `pathapi.http`, for what the built-in
 one does not do: a caller's session with its adapters, authentication and
 cookies, `~/.netrc`, `REQUESTS_CA_BUNDLE` and SOCKS proxies."""
 
@@ -14,7 +14,7 @@ import typing as _ty
 import urllib.parse as _urlparse
 import weakref as _weakref
 
-from pathlib_next.http import HTTPResponse, prepare_request
+from pathapi.http import HTTPResponse, prepare_request
 
 _OWN_KEYS = frozenset(
     {"method", "url", "headers", "data", "timeout", "stream", "allow_redirects"}
@@ -28,7 +28,7 @@ def _import_requests():
         import requests
     except ImportError as error:
         raise ImportError(
-            "requests could not be imported; reinstall pathlib-next-requests",
+            "requests could not be imported; reinstall pathapi-requests",
             name="requests",
         ) from error
     return requests
@@ -319,7 +319,7 @@ class RequestsTransport:
             raise OSError(
                 _errno.EPROTONOSUPPORT,
                 f"a {proxy_scheme!r} proxy needs PySocks: "
-                'pip install "pathlib-next-requests[socks]"',
+                'pip install "pathapi-requests[socks]"',
             )
         return {keys[0]: proxy}
 

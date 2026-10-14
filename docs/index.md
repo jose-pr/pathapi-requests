@@ -1,14 +1,14 @@
-# pathlib-next-requests
+# pathapi-requests
 
-The **`requests` HTTP transport for [`pathlib-next`](https://jose-pr.github.io/pathlib-next/)**.
-`pathlib_next.http` sends requests with a transport built on the standard
+The **`requests` HTTP transport for [`pathapi`](https://jose-pr.github.io/pathapi/)**.
+`pathapi.http` sends requests with a transport built on the standard
 library; install this distribution and the same `HTTPClient` sends through a
 `requests.Session` instead, with nothing to configure.
 
 ## Installation
 
 ```bash
-pip install pathlib-next-requests
+pip install pathapi-requests
 ```
 
 | Extra | Adds | Needed for |
@@ -19,8 +19,8 @@ pip install pathlib-next-requests
 
 ```python
 import requests
-from pathlib_next.http import HTTPClient
-from pathlib_next_requests import RequestsTransport
+from pathapi.http import HTTPClient
+from pathapi_requests import RequestsTransport
 
 with requests.Session() as session:
     session.headers["X-Team"] = "storage"
@@ -29,7 +29,7 @@ with requests.Session() as session:
         print(reply.read().decode())
 ```
 
-`PATHLIB_NEXT_HTTP_TRANSPORT=requests` makes every `HTTPClient` that was given no
+`PATHAPI_HTTP_TRANSPORT=requests` makes every `HTTPClient` that was given no
 transport send through a new session. A proxy per URL, `~/.netrc`,
 `REQUESTS_CA_BUNDLE` and SOCKS proxies work as `requests` does them.
 

@@ -1,17 +1,17 @@
-# pathlib-next-requests
+# pathapi-requests
 
-[![Version](https://img.shields.io/pypi/v/pathlib-next-requests.svg)](https://pypi.org/project/pathlib-next-requests/)
-[![Python versions](https://img.shields.io/pypi/pyversions/pathlib-next-requests.svg)](https://pypi.org/project/pathlib-next-requests/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jose-pr/pathlib-next-requests/blob/main/LICENSE)
-[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://jose-pr.github.io/pathlib-next-requests/)
-[![CI](https://img.shields.io/github/actions/workflow/status/jose-pr/pathlib-next-requests/test.yml)](https://github.com/jose-pr/pathlib-next-requests/actions/workflows/test.yml)
+[![Version](https://img.shields.io/pypi/v/pathapi-requests.svg)](https://pypi.org/project/pathapi-requests/)
+[![Python versions](https://img.shields.io/pypi/pyversions/pathapi-requests.svg)](https://pypi.org/project/pathapi-requests/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jose-pr/pathapi-requests/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://jose-pr.github.io/pathapi-requests/)
+[![CI](https://img.shields.io/github/actions/workflow/status/jose-pr/pathapi-requests/test.yml)](https://github.com/jose-pr/pathapi-requests/actions/workflows/test.yml)
 
-**The `requests` HTTP transport for [`pathlib-next`](https://github.com/jose-pr/pathlib-next).**
-`pathlib_next.http` sends requests with a transport built on the standard
+**The `requests` HTTP transport for [`pathapi`](https://github.com/jose-pr/pathapi).**
+`pathapi.http` sends requests with a transport built on the standard
 library; install this distribution and the same `HTTPClient` sends through a
 `requests.Session` instead, with nothing to configure. It is for what the
 built-in transport does not do, and it is documented at
-<https://jose-pr.github.io/pathlib-next-requests/>.
+<https://jose-pr.github.io/pathapi-requests/>.
 
 ## Features
 
@@ -32,20 +32,20 @@ built-in transport does not do, and it is documented at
   `TimeoutError`, `ConnectionError`, `ssl.SSLError`, `ValueError` or
   `OSError(EIO)`; what the library says, which can quote a proxy URL with
   credentials, is never passed on.
-- **The same promises as the built-in transport.** The tests `pathlib_next` runs
+- **The same promises as the built-in transport.** The tests `pathapi` runs
   over its own transport run over this one
-  (`python -m pathlib_next.http.testing --http-transports requests`).
+  (`python -m pathapi.http.testing --http-transports requests`).
 
 The URI paths of `uripath` use it too: with this distribution installed,
-`with_session()` and `PATHLIB_NEXT_HTTP_TRANSPORT=requests` send through it.
+`with_session()` and `PATHAPI_HTTP_TRANSPORT=requests` send through it.
 
 ## Installation
 
 ```bash
-pip install pathlib-next-requests
+pip install pathapi-requests
 ```
 
-Requires `pathlib-next` and `requests`, which pip installs with it.
+Requires `pathapi` and `requests`, which pip installs with it.
 
 | Extra | Adds | Needed for |
 | --- | --- | --- |
@@ -57,8 +57,8 @@ Requires `pathlib-next` and `requests`, which pip installs with it.
 
 ```python
 import requests
-from pathlib_next.http import HTTPClient
-from pathlib_next_requests import RequestsTransport
+from pathapi.http import HTTPClient
+from pathapi_requests import RequestsTransport
 
 with requests.Session() as session:
     session.headers["X-Team"] = "storage"
@@ -69,18 +69,18 @@ with requests.Session() as session:
 
 The session stays yours: neither the client nor the transport closes it.
 
-**Choose it for the whole process.** `PATHLIB_NEXT_HTTP_TRANSPORT=requests` makes
+**Choose it for the whole process.** `PATHAPI_HTTP_TRANSPORT=requests` makes
 every `HTTPClient` that was given no transport send through a new session:
 
 ```bash
-PATHLIB_NEXT_HTTP_TRANSPORT=requests python -c "from pathlib_next.http import HTTPClient; print(type(HTTPClient().transport))"
+PATHAPI_HTTP_TRANSPORT=requests python -c "from pathapi.http import HTTPClient; print(type(HTTPClient().transport))"
 ```
 
 **Pick a proxy per URL.** `proxies` is indexed with the request URL and answers
 a proxy, or `None` for no proxy; `KeyError` leaves it to `requests`:
 
 ```python
-from pathlib_next_requests import RequestsTransport
+from pathapi_requests import RequestsTransport
 
 
 class ByHost:
@@ -99,13 +99,13 @@ transport = RequestsTransport(proxies=ByHost())
 
 | Name | Purpose |
 | --- | --- |
-| `pathlib_next_requests.RequestsTransport` | The transport: `send()` and `close()` over a `requests.Session` |
-| `pathlib_next_requests.__version__` | The installed version |
+| `pathapi_requests.RequestsTransport` | The transport: `send()` and `close()` over a `requests.Session` |
+| `pathapi_requests.__version__` | The installed version |
 
-`pathlib_next.http` finds the class through the `requests` entry of its
-`pathlib_next.http_transports` entry-point group, which this distribution
+`pathapi.http` finds the class through the `requests` entry of its
+`pathapi.http_transports` entry-point group, which this distribution
 declares. The reference is in the
-[API header](https://github.com/jose-pr/pathlib-next-requests/blob/main/src/pathlib_next_requests/AGENTS.md)
+[API header](https://github.com/jose-pr/pathapi-requests/blob/main/src/pathapi_requests/AGENTS.md)
 that ships with the package.
 
 ## Development
@@ -116,10 +116,10 @@ python -m venv .venv/3.14-posix-x86_64
 .venv/3.14-posix-x86_64/bin/python -m pytest -q -rs
 ```
 
-`pathlib-next` 0.10 is a dependency; while it is not on PyPI, install it
-editable from its checkout first (`pip install -e ../pathlib-next`). The test run
-includes `python -m pathlib_next.http.testing --http-transports requests`, the
-tests `pathlib_next` runs over its own transport.
+`pathapi` 0.1 is a dependency; while it is not on PyPI, install it
+editable from its checkout first (`pip install -e ../pathapi`). The test run
+includes `python -m pathapi.http.testing --http-transports requests`, the
+tests `pathapi` runs over its own transport.
 
 ### Releasing
 

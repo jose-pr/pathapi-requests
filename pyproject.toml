@@ -4,10 +4,10 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pathlib-next-requests"
+name = "pathapi-requests"
 version = "0.1.0"
 authors = [{ name = "Jose A" }]
-description = "The requests HTTP transport for pathlib-next: your own requests.Session, ~/.netrc, REQUESTS_CA_BUNDLE and SOCKS proxies"
+description = "The requests HTTP transport for pathapi: your own requests.Session, ~/.netrc, REQUESTS_CA_BUNDLE and SOCKS proxies"
 readme = "README.md"
 requires-python = ">=3.9"
 # PEP 639: SPDX license expression plus the file it refers to. This replaces
@@ -24,11 +24,11 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
-    # src/pathlib_next_requests/py.typed ships in the wheel.
+    # src/pathapi_requests/py.typed ships in the wheel.
     "Typing :: Typed",
 ]
 dependencies = [
-    "pathlib-next>=0.10.0,<0.11",
+    "pathapi>=0.1.0,<0.2",
     # Before 2.18 the bundled urllib3 imports the ABCs from `collections` (a
     # DeprecationWarning on 3.9); 2.21 caps urllib3 below 1.25, which botocore
     # 1.36 cannot share.
@@ -39,7 +39,7 @@ dependencies = [
 # SOCKS proxies (`socks5://...`) need PySocks, which `requests` installs with this extra.
 socks = ["requests[socks]>=2.22.0,<3"]
 dev = [
-    'pathlib-next-requests[socks]',
+    'pathapi-requests[socks]',
     'build',
     'twine',
     'hatchling',
@@ -50,24 +50,24 @@ dev = [
 ]
 docs = ['mkdocs', 'mkdocs-material', 'mkdocstrings[python]']
 
-# The HTTP transports `pathlib_next.http` can send through. The value is a class that is
-# built with no arguments; `pathlib_next.http.transport_names()` lists it without
+# The HTTP transports `pathapi.http` can send through. The value is a class that is
+# built with no arguments; `pathapi.http.transport_names()` lists it without
 # importing this package.
-[project.entry-points."pathlib_next.http_transports"]
-requests = "pathlib_next_requests:RequestsTransport"
+[project.entry-points."pathapi.http_transports"]
+requests = "pathapi_requests:RequestsTransport"
 
 [project.urls]
-Homepage = "https://github.com/jose-pr/pathlib-next-requests/"
-Documentation = "https://jose-pr.github.io/pathlib-next-requests/"
-Issues = "https://github.com/jose-pr/pathlib-next-requests/issues"
+Homepage = "https://github.com/jose-pr/pathapi-requests/"
+Documentation = "https://jose-pr.github.io/pathapi-requests/"
+Issues = "https://github.com/jose-pr/pathapi-requests/issues"
 
 # Ship the consumer-facing docs inside the installed package, so they are
 # readable from site-packages via importlib.resources without the repo.
-# src/pathlib_next_requests/AGENTS.md (the API header) is included automatically
+# src/pathapi_requests/AGENTS.md (the API header) is included automatically
 # by living in the package dir. The repo-root AGENTS.md is contributor
 # orientation for a checkout and is not part of the wheel.
 [tool.hatch.build.targets.wheel.force-include]
-"README.md" = "pathlib_next_requests/README.md"
+"README.md" = "pathapi_requests/README.md"
 
 # `*.local.*` files are per-machine overrides and `CLAUDE*` is agent config:
 # neither is ever packaged (both are also gitignored). `/.*` does not match
@@ -76,7 +76,7 @@ Issues = "https://github.com/jose-pr/pathlib-next-requests/issues"
 exclude = ["/.*", "/AGENTS.md", "/benchmarks", "*.local.*", "CLAUDE*"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pathlib_next_requests"]
+packages = ["src/pathapi_requests"]
 exclude = ["*.local.*", "CLAUDE*"]
 
 [tool.black]

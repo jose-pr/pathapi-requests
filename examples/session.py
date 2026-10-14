@@ -11,8 +11,8 @@ import http.server
 import threading
 
 import requests
-from pathlib_next.http import HTTPClient
-from pathlib_next_requests import RequestsTransport
+from pathapi.http import HTTPClient
+from pathapi_requests import RequestsTransport
 
 
 class Handler(http.server.BaseHTTPRequestHandler):

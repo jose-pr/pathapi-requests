@@ -1,6 +1,6 @@
-"""pathlib-next-requests benchmark runner.
+"""pathapi-requests benchmark runner.
 
-Times the built-in transport of `pathlib_next.http` and this one on the same requests
+Times the built-in transport of `pathapi.http` and this one on the same requests
 against an in-process loopback server. Run `python benchmarks/bench.py --help`
 for the options. `--save` writes the run as JSON into `benchmarks/results/`;
 the schema is in `benchmarks/README.md`.
@@ -25,7 +25,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-SCHEMA = "pathlib-next-requests.bench/1"
+SCHEMA = "pathapi-requests.bench/1"
 BODY = b"x" * 1024
 LARGE = b"y" * (1 << 20)
 
@@ -51,7 +51,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
 
 
 def _cases(url, samples):
-    from pathlib_next.http import HTTPClient, get_transport
+    from pathapi.http import HTTPClient, get_transport
 
     results = {}
     for name in ("builtin", "requests"):
@@ -127,8 +127,8 @@ def main(argv=None) -> int:
     if not 1 <= args.samples <= 100:
         parser.error("--samples is between 1 and 100")
 
-    import pathlib_next
-    import pathlib_next_requests
+    import pathapi
+    import pathapi_requests
     import requests
 
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
@@ -143,7 +143,7 @@ def main(argv=None) -> int:
     for label, values in metrics.items():
         print(f"{label}: median {values['median_ms']:.3f} ms per call")
     if args.save:
-        version = pathlib_next_requests.__version__
+        version = pathapi_requests.__version__
         python = f"py{sys.version_info.major}.{sys.version_info.minor}"
         system = f"{platform.system().lower()}-{platform.machine().lower()}"
         name = args.name or f"{version}-{python}-{system}"
@@ -155,9 +155,9 @@ def main(argv=None) -> int:
             "created_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(
                 timespec="seconds"
             ),
-            "package": {"name": "pathlib-next-requests", "version": version},
+            "package": {"name": "pathapi-requests", "version": version},
             "dependencies": {
-                "pathlib-next": pathlib_next.__version__,
+                "pathapi": pathapi.__version__,
                 "requests": requests.__version__,
             },
             "git": _git(),

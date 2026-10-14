@@ -1,4 +1,4 @@
-"""The tests `pathlib_next` runs over its own HTTP transport, run over this one:
+"""The tests `pathapi` runs over its own HTTP transport, run over this one:
 `HTTPClient` against loopback servers and the transport contract against
 servers scripted at the byte level."""
 
@@ -11,7 +11,7 @@ import sys
 COMMAND = [
     sys.executable,
     "-m",
-    "pathlib_next.http.testing",
+    "pathapi.http.testing",
     "--http-transports",
     "requests",
     "-p",
@@ -37,7 +37,7 @@ def _counts(output):
     )
 
 
-def test_the_transport_suite_of_pathlib_next_passes_over_the_requests_transport():
+def test_the_transport_suite_of_pathapi_passes_over_the_requests_transport():
     result = _run("-q", "-rs", timeout=1800)
     output = result.stdout + result.stderr
     counts = _counts(result.stdout)
@@ -55,7 +55,7 @@ def test_the_transport_suite_of_pathlib_next_passes_over_the_requests_transport(
 def test_the_suite_runs_the_tests_that_depend_on_the_transport_once_for_this_one():
     # Node ids are relative to the root directory; on a runner where the suite and
     # the checkout are on different drives they would lose their file part.
-    from pathlib_next.http.testing import suite_directory
+    from pathapi.http.testing import suite_directory
 
     result = _run("--collect-only", "-q", f"--rootdir={suite_directory()}", timeout=600)
     assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
