@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-14
+
 The first release of `pathlib-next-requests`: `RequestsTransport`, the HTTP
 transport that sends through a `requests.Session`, as a distribution of its own.
 It needs Python 3.9 or newer, `pathlib-next>=0.10.0,<0.11` and
@@ -61,4 +63,5 @@ behaviour with what to do about it.
   `TypeError` where the transport is built. What to do: pass a
   `requests.Session`.
 
-[Unreleased]: https://github.com/jose-pr/pathlib-next-requests/commits/main
+[Unreleased]: https://github.com/jose-pr/pathlib-next-requests/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/jose-pr/pathlib-next-requests/releases/tag/v0.1.0
