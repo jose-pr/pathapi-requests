@@ -19,10 +19,6 @@ on:
         description: "Git ref of jose-pr/pathlib-next to install instead of the release (branch, tag, or SHA); empty uses the repository variable PATHLIB_NEXT_REF"
         required: false
         default: ""
-      uripath_ref:
-        description: "Git ref of jose-pr/uripath to install instead of the release (branch, tag, or SHA); empty uses the repository variable URIPATH_REF"
-        required: false
-        default: ""
       benchmark:
         description: "Also run the benchmark suite (manual runs only)"
         type: boolean
@@ -40,14 +36,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # The pathlib-next and the uripath every job installs first: a git ref of
-  # jose-pr/pathlib-next and of jose-pr/uripath from the dispatch inputs, else
-  # from the repository variables PATHLIB_NEXT_REF and URIPATH_REF (a ci-* tag
-  # has no input). With both empty, pip takes the release ranges that
-  # pyproject.toml declares from PyPI. A ref must hold a version inside its
-  # range.
+  # The pathlib-next every job installs first: a git ref of
+  # jose-pr/pathlib-next from the dispatch input, else from the repository
+  # variable PATHLIB_NEXT_REF (a ci-* tag has no input). With both empty, pip
+  # takes the release range that pyproject.toml declares from PyPI. A ref must
+  # hold a version inside that range (at its floor, for the floors job).
   CORE_REF: ${{ inputs.pathlib_next_ref || vars.PATHLIB_NEXT_REF }}
-  URIPATH_REF: ${{ inputs.uripath_ref || vars.URIPATH_REF }}
 
 jobs:
   test:
@@ -91,23 +85,18 @@ jobs:
         # The core goes in first, so the step below finds its range satisfied.
         shell: bash
         run: python -m pip install "pathlib-next @ git+https://github.com/jose-pr/pathlib-next@${CORE_REF}"
-      - name: Install uripath from the git ref, if one is set
-        if: ${{ env.URIPATH_REF != '' }}
-        # pathlib-next is in already, so the range uripath asks of it holds.
-        shell: bash
-        run: python -m pip install "uripath @ git+https://github.com/jose-pr/uripath@${URIPATH_REF}"
       - name: Install the package with its test dependencies
         run: python -m pip install -e ".[dev]"
       - name: Run tests
         # -rs lists every skip with its reason. The run includes the transport
-        # suite of uripath over this transport (tests/test_uripath_suite.py).
+        # suite of pathlib-next over this transport (tests/test_transport_suite.py).
         run: python -m pytest -q -rs
 
   # The declared floors, exercised: every runtime dependency and feature extra
   # installed AT the lower bound pyproject.toml declares (`>=X.Y.0` -> `==X.Y.0`),
-  # on the oldest supported Python. The matrix above only
-  # ever gets the newest releases, so a floor that no longer works would
-  # otherwise go unnoticed.
+  # on the oldest supported Python: pathlib-next and requests both. The matrix
+  # above only ever gets the newest releases, so a floor that no longer works
+  # would otherwise go unnoticed.
   floors:
     name: Test at the declared dependency floors
     runs-on: ubuntu-latest
@@ -145,11 +134,6 @@ jobs:
         # Without a ref the release is installed at its floor, below.
         shell: bash
         run: python -m pip install "pathlib-next @ git+https://github.com/jose-pr/pathlib-next@${CORE_REF}"
-      - name: Install uripath from the git ref, if one is set
-        if: ${{ env.URIPATH_REF != '' }}
-        # pathlib-next is in already, so the range uripath asks of it holds.
-        shell: bash
-        run: python -m pip install "uripath @ git+https://github.com/jose-pr/uripath@${URIPATH_REF}"
       - name: Install at the floors
         run: python -m pip install -c floors.txt -e ".[dev]"
       - name: Run tests
@@ -179,11 +163,6 @@ jobs:
         if: ${{ env.CORE_REF != '' }}
         shell: bash
         run: python -m pip install "pathlib-next @ git+https://github.com/jose-pr/pathlib-next@${CORE_REF}"
-      - name: Install uripath from the git ref, if one is set
-        if: ${{ env.URIPATH_REF != '' }}
-        # pathlib-next is in already, so the range uripath asks of it holds.
-        shell: bash
-        run: python -m pip install "uripath @ git+https://github.com/jose-pr/uripath@${URIPATH_REF}"
       - name: Install benchmark dependencies
         run: python -m pip install -e ".[dev]"
       - name: Run benchmark suite

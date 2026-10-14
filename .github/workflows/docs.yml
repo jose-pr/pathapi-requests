@@ -34,22 +34,16 @@ on:
         description: "Git ref of jose-pr/pathlib-next to install instead of the release (branch, tag, or SHA); empty uses the repository variable PATHLIB_NEXT_REF"
         required: false
         default: ""
-      uripath_ref:
-        description: "Git ref of jose-pr/uripath to install instead of the release (branch, tag, or SHA); empty uses the repository variable URIPATH_REF"
-        required: false
-        default: ""
 
 permissions:
   contents: read
 
 env:
-  # The pathlib-next and the uripath to install first: a git ref of
-  # jose-pr/pathlib-next and of jose-pr/uripath from the dispatch inputs, else
-  # from the repository variables PATHLIB_NEXT_REF and URIPATH_REF (a push has
-  # no input). With both empty, pip takes them from PyPI. The API pages import
-  # the package, so the build needs them.
+  # The pathlib-next to install first: a git ref of jose-pr/pathlib-next from
+  # the dispatch input, else from the repository variable PATHLIB_NEXT_REF (a
+  # push has no input). With both empty, pip takes it from PyPI. The API pages
+  # import the package, so the build needs it.
   CORE_REF: ${{ inputs.pathlib_next_ref || vars.PATHLIB_NEXT_REF }}
-  URIPATH_REF: ${{ inputs.uripath_ref || vars.URIPATH_REF }}
 
 # Serialize deploys; never cancel an in-flight Pages deploy mid-publish.
 concurrency:
@@ -75,11 +69,6 @@ jobs:
         if: ${{ env.CORE_REF != '' }}
         shell: bash
         run: python -m pip install "pathlib-next @ git+https://github.com/jose-pr/pathlib-next@${CORE_REF}"
-      - name: Install uripath from the git ref, if one is set
-        if: ${{ env.URIPATH_REF != '' }}
-        # pathlib-next is in already, so the range uripath asks of it holds.
-        shell: bash
-        run: python -m pip install "uripath @ git+https://github.com/jose-pr/uripath@${URIPATH_REF}"
       - name: Install package with docs tooling
         run: python -m pip install -e ".[dev,docs]"
       - name: Build docs

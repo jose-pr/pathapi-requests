@@ -17,27 +17,24 @@ permissions:
   contents: read
 
 env:
-  # Git refs of jose-pr/pathlib-next and jose-pr/uripath to install first (the
-  # repository variables PATHLIB_NEXT_REF and URIPATH_REF), for a pre-release
-  # made while the releases that pyproject.toml asks for are not on PyPI yet.
-  # Empty installs them from PyPI. A final tag refuses a ref: what is released
-  # is what users install.
+  # A git ref of jose-pr/pathlib-next to install first (the repository variable
+  # PATHLIB_NEXT_REF), for a pre-release made while the release that
+  # pyproject.toml asks for is not on PyPI yet. Empty installs it from PyPI. A
+  # final tag refuses a ref: what is released is what users install.
   CORE_REF: ${{ vars.PATHLIB_NEXT_REF }}
-  URIPATH_REF: ${{ vars.URIPATH_REF }}
 
 jobs:
   released-dependencies:
-    name: Source of pathlib-next and uripath
+    name: Source of pathlib-next
     runs-on: ubuntu-latest
     steps:
-      - name: Say where they come from
+      - name: Say where it comes from
         run: |
           echo "pathlib-next from ${CORE_REF:-PyPI}"
-          echo "uripath from ${URIPATH_REF:-PyPI}"
       - name: Refuse a git ref on a final tag
-        if: ${{ (env.CORE_REF != '' || env.URIPATH_REF != '') && !contains(github.ref_name, '-') }}
+        if: ${{ env.CORE_REF != '' && !contains(github.ref_name, '-') }}
         run: |
-          echo "PATHLIB_NEXT_REF or URIPATH_REF is set: a final release is tested against the releases on PyPI. Release them first and delete the repository variables." >&2
+          echo "PATHLIB_NEXT_REF is set: a final release is tested against the release of pathlib-next on PyPI. Release it first and delete the repository variable." >&2
           exit 1
 
   test:
@@ -57,11 +54,6 @@ jobs:
         if: ${{ env.CORE_REF != '' }}
         shell: bash
         run: python -m pip install "pathlib-next @ git+https://github.com/jose-pr/pathlib-next@${CORE_REF}"
-      - name: Install uripath from the git ref, if one is set
-        if: ${{ env.URIPATH_REF != '' }}
-        # pathlib-next is in already, so the range uripath asks of it holds.
-        shell: bash
-        run: python -m pip install "uripath @ git+https://github.com/jose-pr/uripath@${URIPATH_REF}"
       - name: Install the package with its test dependencies
         run: python -m pip install -e ".[dev]"
       - name: Run tests
@@ -103,11 +95,6 @@ jobs:
         if: ${{ env.CORE_REF != '' }}
         shell: bash
         run: python -m pip install "pathlib-next @ git+https://github.com/jose-pr/pathlib-next@${CORE_REF}"
-      - name: Install uripath from the git ref, if one is set
-        if: ${{ env.URIPATH_REF != '' }}
-        # pathlib-next is in already, so the range uripath asks of it holds.
-        shell: bash
-        run: python -m pip install "uripath @ git+https://github.com/jose-pr/uripath@${URIPATH_REF}"
       - name: Install at the floors
         run: python -m pip install -c floors.txt -e ".[dev]"
       - name: Run tests
@@ -158,8 +145,8 @@ jobs:
 
   # What a user installs is the wheel, not the checkout: install it into a clean
   # environment and check that it imports without loading `requests`, carries
-  # the files it must ship, is found by uripath through its entry point and
-  # sends a request through a session.
+  # the files it must ship, is found by pathlib_next.http through its entry point
+  # and sends a request through a session.
   wheel-smoke:
     name: Installed-wheel smoke test (py${{ matrix.python-version }})
     needs: build
@@ -183,9 +170,6 @@ jobs:
           if [ -n "$CORE_REF" ]; then
             "$RUNNER_TEMP/venv/bin/pip" install "pathlib-next @ git+https://github.com/jose-pr/pathlib-next@${CORE_REF}"
           fi
-          if [ -n "$URIPATH_REF" ]; then
-            "$RUNNER_TEMP/venv/bin/pip" install "uripath @ git+https://github.com/jose-pr/uripath@${URIPATH_REF}"
-          fi
           "$RUNNER_TEMP/venv/bin/pip" install dist/*.whl
       - name: Import it, find the files it must ship and the entry point
         working-directory: ${{ runner.temp }}
@@ -195,23 +179,23 @@ jobs:
           from importlib.resources import files
           import sys
 
-          import uripath_http_requests
-          from uripath import transports
+          import pathlib_next_requests
+          from pathlib_next.http import get_transport, transport_names
 
-          root = files("uripath_http_requests")
+          root = files("pathlib_next_requests")
           for name in ("py.typed", "AGENTS.md", "README.md"):
               assert (root / name).is_file(), "the wheel does not ship %s" % name
           loaded = {"requests", "urllib3", "socks"} & set(sys.modules)
           assert not loaded, "importing the package loaded %s" % sorted(loaded)
           found = entry_points()
           if hasattr(found, "select"):
-              declared = list(found.select(group="uripath.http_transports"))
+              declared = list(found.select(group="pathlib_next.http_transports"))
           else:
-              declared = list(found.get("uripath.http_transports", []))
+              declared = list(found.get("pathlib_next.http_transports", []))
           assert "requests" in {ep.name for ep in declared}, "no requests entry point"
-          assert transports.names() == ("builtin", "requests"), transports.names()
-          assert transports.get("requests") is uripath_http_requests.RequestsTransport
-          print("ok:", uripath_http_requests.__version__)
+          assert transport_names() == ("builtin", "requests"), transport_names()
+          assert get_transport("requests") is pathlib_next_requests.RequestsTransport
+          print("ok:", pathlib_next_requests.__version__)
           PY
           "$RUNNER_TEMP/venv/bin/python" check.py
       - name: Send a request through a session of the installed wheel
@@ -222,7 +206,8 @@ jobs:
           import threading
 
           import requests
-          from uripath import URIPath
+          from pathlib_next.http import HTTPClient
+          from pathlib_next_requests import RequestsTransport
 
 
           class Handler(http.server.BaseHTTPRequestHandler):
@@ -241,9 +226,9 @@ jobs:
           threading.Thread(target=server.serve_forever, daemon=True).start()
           url = "http://127.0.0.1:%d/a.txt" % server.server_port
           with requests.Session() as session:
-              path = URIPath(url).with_session(session)
-              assert path.read_bytes() == b"through requests"
-              assert type(path.backend.transport).__module__ == "uripath_http_requests._transport"
+              with HTTPClient(RequestsTransport(session)) as client:
+                  assert client.request("GET", url).read() == b"through requests"
+                  assert type(client.transport).__module__ == "pathlib_next_requests._transport"
           server.shutdown()
           print("ok")
           PY
@@ -266,11 +251,6 @@ jobs:
         if: ${{ env.CORE_REF != '' }}
         shell: bash
         run: python -m pip install "pathlib-next @ git+https://github.com/jose-pr/pathlib-next@${CORE_REF}"
-      - name: Install uripath from the git ref, if one is set
-        if: ${{ env.URIPATH_REF != '' }}
-        # pathlib-next is in already, so the range uripath asks of it holds.
-        shell: bash
-        run: python -m pip install "uripath @ git+https://github.com/jose-pr/uripath@${URIPATH_REF}"
       - name: Install package with docs tooling
         run: python -m pip install -e ".[dev,docs]"
       - name: Build docs (gate only)
@@ -343,7 +323,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/uripath-http-requests/
+      url: https://pypi.org/project/pathlib-next-requests/
     permissions:
       id-token: write # required for PyPI Trusted Publishing (OIDC)
     steps:
