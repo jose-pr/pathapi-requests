@@ -79,7 +79,9 @@ def test_a_reply_that_is_open_keeps_the_session_of_its_transport_open():
     closed = []
     with Wire(lambda request: response(body=b"a" * 100)) as wire:
         transport = RequestsTransport()
-        transport.session.get_adapter(wire.url).close = lambda: closed.append(True)
+        adapter = transport.session.get_adapter(wire.url)
+        original = adapter.close
+        adapter.close = lambda: (closed.append(True), original())
         reply = send(transport, wire.url + "/", stream=True)
         del transport
         gc.collect()

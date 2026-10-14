@@ -89,7 +89,8 @@ def test_the_name_of_a_transport_is_case_sensitive(monkeypatch):
 def test_a_client_given_a_transport_leaves_it_open():
     with Wire() as wire, RequestsTransport() as transport:
         closed = []
-        transport.session.close = lambda: closed.append(True)
+        original = transport.session.close
+        transport.session.close = lambda: (closed.append(True), original())
         with HTTPClient(transport) as client:
             assert client.request("GET", wire.url + "/").read() == b"ok"
         assert closed == []
