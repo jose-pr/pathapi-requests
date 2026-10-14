@@ -13,8 +13,8 @@ import types
 import pytest
 import requests
 
-from http_wire import Proxy, Wire, refusing_port, response
-from uripath_http_requests import RequestsTransport, _transport
+from pathlib_next_requests import RequestsTransport, _transport
+from transport_wire import Proxy, Wire, refusing_port, response
 
 TIMEOUT = (5, 5)
 _POLL = 0.05
@@ -317,7 +317,7 @@ def test_a_socks_proxy_without_pysocks_names_the_extra(monkeypatch):
             with pytest.raises(OSError) as raised:
                 send(transport, origin.url + "/f")
     assert raised.value.errno == errno.EPROTONOSUPPORT
-    assert "uripath-http-requests[socks]" in str(raised.value)
+    assert "pathlib-next-requests[socks]" in str(raised.value)
     assert "socks5h" in str(raised.value)
     assert origin.requests == []
 

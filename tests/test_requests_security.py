@@ -11,9 +11,9 @@ import traceback
 import pytest
 import requests
 
-from http_wire import Wire, refusing_port, response
-from uripath.schemes import HTTPURIPath
-from uripath_http_requests import RequestsTransport
+from pathlib_next.http import HTTPClient
+from pathlib_next_requests import RequestsTransport
+from transport_wire import Wire, refusing_port, response
 
 TIMEOUT = (5, 5)
 QUOTED = "http://proxyuser:pr0xyS3cret@proxy.example:3128"
@@ -242,7 +242,7 @@ def test_the_transport_does_not_follow_a_redirect_whatever_the_arguments_say(
     assert away.requests == []
 
 
-def test_a_path_redirected_to_another_server_does_not_take_the_session_there(
+def test_a_client_redirected_to_another_server_does_not_take_the_session_there(
     two_servers,
 ):
     home, away = two_servers
@@ -251,8 +251,8 @@ def test_a_path_redirected_to_another_server_does_not_take_the_session_there(
     )
     with requests.Session() as session:
         session.auth = ("bob", "b")
-        path = HTTPURIPath(home.url + "/start").with_session(session, timeout=TIMEOUT)
-        assert path.read_bytes() == b"ok"
+        client = HTTPClient(RequestsTransport(session), timeout=TIMEOUT)
+        assert client.request("GET", home.url + "/start").read() == b"ok"
     assert home.requests[0].header("Authorization") == "Basic Ym9iOmI="
     assert away.requests[0].target == "/landing"
     assert away.requests[0].header("Authorization") is None

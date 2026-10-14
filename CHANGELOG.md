@@ -7,22 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-The first release of `uripath-http-requests`: `RequestsTransport`, the HTTP
+The first release of `pathlib-next-requests`: `RequestsTransport`, the HTTP
 transport that sends through a `requests.Session`, as a distribution of its own.
-It needs Python 3.9 or newer, `uripath>=0.10.0,<0.11` and `requests>=2.22.0,<3`;
-its one extra, `socks`, adds `requests[socks]` for SOCKS proxies. Under *Changed*,
-the migration from `pathlib_next.uri.schemes.http.RequestsTransport` comes in
-this order: the table of names, then every change of behaviour with what to do
-about it.
+It needs Python 3.9 or newer, `pathlib-next>=0.10.0,<0.11` and
+`requests>=2.22.0,<3`; its one extra, `socks`, adds `requests[socks]` for SOCKS
+proxies. Under *Changed*, the migration from the `RequestsTransport` of
+`pathlib-next` comes in this order: the table of names, then every change of
+behaviour with what to do about it.
 
 ### Added
 
-- `uripath_http_requests.RequestsTransport` and `uripath_http_requests.__version__`.
-- The distribution declares the `requests` entry of the `uripath.http_transports`
-  group. Installing it is all that `uripath` needs to send through it:
-  `path.with_session(session)`, `RepoBackend(session=...)` and
-  `URIPATH_HTTP_TRANSPORT=requests` use it, and `uripath.transports.names()`
-  lists it.
+- `pathlib_next_requests.RequestsTransport` and `pathlib_next_requests.__version__`.
+- The distribution declares the `requests` entry of the
+  `pathlib_next.http_transports` group. Installing it is all that
+  `pathlib_next.http` needs to send through it:
+  `HTTPClient(RequestsTransport(session))` and
+  `PATHLIB_NEXT_HTTP_TRANSPORT=requests` use it,
+  `pathlib_next.http.get_transport("requests")` loads it, and
+  `pathlib_next.http.transport_names()` lists it.
 - `RequestsTransport(proxies=provider)`: an object indexed with the request URL
   that answers a proxy (a URL, or an object with a `url`), `None` for no proxy,
   or an iterable of them, of which the first is used. `KeyError` leaves the
@@ -31,10 +33,10 @@ about it.
   response that is still open keeps its transport alive, so a dropped transport
   leaves no sockets to the garbage collector on any `urllib3`.
 - A `socks4:`, `socks5:` or `socks5h:` proxy without PySocks raises
-  `OSError(EPROTONOSUPPORT)` naming `uripath-http-requests[socks]`.
-- The tests `uripath` runs over its own transport run over this one
-  (`python -m uripath.testing --http-transports requests`) as part of the
-  test suite.
+  `OSError(EPROTONOSUPPORT)` naming `pathlib-next-requests[socks]`.
+- The tests `pathlib_next` runs over its own transport run over this one
+  (`python -m pathlib_next.http.testing --http-transports requests`) as part of
+  the test suite.
 
 ### Changed
 
@@ -42,10 +44,10 @@ about it.
 
   | Was | Is |
   | --- | --- |
-  | `pathlib_next.uri.schemes.http.RequestsTransport` | `uripath_http_requests.RequestsTransport` |
+  | `pathlib_next.uri.schemes.http.RequestsTransport` | `pathlib_next_requests.RequestsTransport` |
   | `RequestsTransport(session=None, **requests_args)` | `RequestsTransport(session=None, *, proxies=None, **requests_args)` |
-  | the extra `pathlib-next[http]` | `pip install uripath-http-requests` |
-  | `PATHLIB_NEXT_HTTP_TRANSPORT=requests` | `URIPATH_HTTP_TRANSPORT=requests` |
+  | the extra `pathlib-next[http]` | `pip install pathlib-next-requests` |
+  | `PATHLIB_NEXT_HTTP_TRANSPORT=requests` | the same, read by `pathlib_next.http`; this distribution must be installed |
 
 - `proxies` is a provider and no longer an argument that `requests` receives as
   it is. A `dict` keeps its `requests` meaning for the keys `"http"`, `"https"`,
@@ -54,9 +56,9 @@ about it.
   environment, or answer `None` for those URLs.
 - A `requests` that cannot be imported raises an `ImportError` that names this
   distribution, where it named the `http` extra of `pathlib-next`. What to do:
-  reinstall `uripath-http-requests`.
+  reinstall `pathlib-next-requests`.
 - A `session` that is not an object with a `request()` method raises
   `TypeError` where the transport is built. What to do: pass a
   `requests.Session`.
 
-[Unreleased]: https://github.com/jose-pr/uripath-http-requests/commits/main
+[Unreleased]: https://github.com/jose-pr/pathlib-next-requests/commits/main

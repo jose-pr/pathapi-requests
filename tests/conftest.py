@@ -1,9 +1,9 @@
 """Keeps the test run on this machine and independent of it, and puts the
-loopback servers of `uripath`'s own transport tests within reach.
+loopback servers of the `pathlib_next` transport suite within reach.
 
-Every connection that is not to the loopback interface raises, a program other
-than the interpreter cannot be started, and the proxy, CA-bundle and `.netrc`
-settings of the developer's shell are not there to be read."""
+Every connection that is not to the loopback interface raises, and the proxy,
+CA-bundle and `.netrc` settings of the developer's shell are not there to be
+read."""
 
 from __future__ import annotations
 
@@ -12,23 +12,19 @@ import tempfile
 
 import pytest
 
-from uripath import testing
+from pathlib_next.http.testing import suite_directory
 
-# `http_wire` (loopback servers scripted at the byte level) and `hermetic`.
-sys.path.insert(0, str(testing.suite_directory()))
+# `transport_wire` (loopback servers scripted at the byte level) and
+# `transport_guard`.
+sys.path.insert(0, str(suite_directory()))
 
-import hermetic  # noqa: E402
+import transport_guard  # noqa: E402
 
 
 def pytest_configure(config):
-    config.addinivalue_line(
-        "markers",
-        "allow_network: lift the autouse non-loopback network guard for a test "
-        "that deliberately resolves or connects to a real host",
-    )
-    home = tempfile.TemporaryDirectory(prefix="uripath-http-requests-home-")
+    home = tempfile.TemporaryDirectory(prefix="pathlib-next-requests-home-")
     patch = pytest.MonkeyPatch()
-    hermetic.isolate_environment(patch, home.name)
+    transport_guard.isolate_environment(patch, home.name)
     config.add_cleanup(home.cleanup)
     config.add_cleanup(patch.undo)
 
@@ -38,7 +34,7 @@ _ENV_BEFORE = pytest.StashKey[dict]()
 
 @pytest.hookimpl(wrapper=True)
 def pytest_runtest_setup(item):
-    item.stash[_ENV_BEFORE] = hermetic.environment_snapshot()
+    item.stash[_ENV_BEFORE] = transport_guard.environment_snapshot()
     return (yield)
 
 
@@ -47,12 +43,14 @@ def pytest_runtest_teardown(item, nextitem):
     result = yield
     before = item.stash.get(_ENV_BEFORE, None)
     changed = (
-        hermetic.changed_variables(before, hermetic.environment_snapshot())
+        transport_guard.changed_variables(
+            before, transport_guard.environment_snapshot()
+        )
         if before is not None
         else {}
     )
     if changed:
-        hermetic.restore_environment(before)
+        transport_guard.restore_environment(before)
         raise AssertionError(
             "the test left the process environment changed (use monkeypatch): "
             + ", ".join(f"{k}: {old!r} -> {new!r}" for k, (old, new) in changed.items())
@@ -61,11 +59,9 @@ def pytest_runtest_teardown(item, nextitem):
 
 
 @pytest.fixture(autouse=True)
-def _block_non_loopback_network(request, monkeypatch):
+def _block_non_loopback_network(monkeypatch):
     blocked = []
-    if not request.node.get_closest_marker("allow_network"):
-        hermetic.install_network_guard(monkeypatch, blocked)
-    hermetic.install_process_guard(monkeypatch, blocked, ())
+    transport_guard.install_network_guard(monkeypatch, blocked)
     yield blocked
     if blocked:
         pytest.fail(f"non-loopback network access attempted: {blocked}")
@@ -74,7 +70,7 @@ def _block_non_loopback_network(request, monkeypatch):
 @pytest.fixture
 def transport():
     """A `RequestsTransport` on a new session, closed after the test."""
-    from uripath_http_requests import RequestsTransport
+    from pathlib_next_requests import RequestsTransport
 
     with RequestsTransport() as made:
         yield made

@@ -1,6 +1,6 @@
-"""`requests` as an HTTP transport for `uripath`, for what the built-in one does
-not do: a caller's session with its adapters, authentication and cookies,
-`~/.netrc`, `REQUESTS_CA_BUNDLE` and SOCKS proxies."""
+"""`requests` as an HTTP transport for `pathlib_next.http`, for what the built-in
+one does not do: a caller's session with its adapters, authentication and
+cookies, `~/.netrc`, `REQUESTS_CA_BUNDLE` and SOCKS proxies."""
 
 from __future__ import annotations
 
@@ -14,8 +14,7 @@ import typing as _ty
 import urllib.parse as _urlparse
 import weakref as _weakref
 
-from uripath.schemes import HTTPResponse
-from uripath.transports import prepare_request
+from pathlib_next.http import HTTPResponse, prepare_request
 
 _OWN_KEYS = frozenset(
     {"method", "url", "headers", "data", "timeout", "stream", "allow_redirects"}
@@ -29,7 +28,7 @@ def _import_requests():
         import requests
     except ImportError as error:
         raise ImportError(
-            "requests could not be imported; reinstall uripath-http-requests",
+            "requests could not be imported; reinstall pathlib-next-requests",
             name="requests",
         ) from error
     return requests
@@ -320,7 +319,7 @@ class RequestsTransport:
             raise OSError(
                 _errno.EPROTONOSUPPORT,
                 f"a {proxy_scheme!r} proxy needs PySocks: "
-                'pip install "uripath-http-requests[socks]"',
+                'pip install "pathlib-next-requests[socks]"',
             )
         return {keys[0]: proxy}
 

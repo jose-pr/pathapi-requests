@@ -1,26 +1,26 @@
-# `uripath_http_requests` — public API header
+# `pathlib_next_requests` — public API header
 
-Header-file-style reference for the `uripath_http_requests` package: every public
+Header-file-style reference for the `pathlib_next_requests` package: every public
 export with its signature, arguments, contract and gotchas, so the package can
 be used without reading its source. It ships inside the package and is
 self-contained. Development documentation lives with the source at
-<https://github.com/jose-pr/uripath-http-requests>.
+<https://github.com/jose-pr/pathlib-next-requests>.
 
-Names are imported from `uripath_http_requests`, which exports one class,
+Names are imported from `pathlib_next_requests`, which exports one class,
 `RequestsTransport`, and `__version__`. A module or name that starts with an
 underscore is private and nothing there is contract.
 
-`pip install uripath-http-requests`. Required dependencies: `uripath>=0.10.0,<0.11`
+`pip install pathlib-next-requests`. Required dependencies: `pathlib-next>=0.10.0,<0.11`
 and `requests>=2.22.0,<3`. The one extra, `socks`, adds `requests[socks]`
 (PySocks) for `socks4:`, `socks5:` and `socks5h:` proxies. `requests` is imported
 when a transport is built, not when this package is.
 
-`uripath_http_requests.__version__` is the version of the installed
+`pathlib_next_requests.__version__` is the version of the installed
 distribution, read from its metadata. The rendered documentation is at
-<https://jose-pr.github.io/uripath-http-requests/> and the project overview is the
-`README.md` shipped next to this file (`uripath_http_requests/README.md`).
+<https://jose-pr.github.io/pathlib-next-requests/> and the project overview is the
+`README.md` shipped next to this file (`pathlib_next_requests/README.md`).
 
-## The `requests` transport (`uripath_http_requests`)
+## The `requests` transport (`pathlib_next_requests`)
 
 ```python
 class RequestsTransport:
@@ -32,20 +32,21 @@ class RequestsTransport:
     def close(self) -> None: ...
 ```
 
-`RequestsTransport` is an HTTP transport for `uripath` (the contract is
-"The transport contract" in the `uripath` header): `send()` makes one request
-with a `requests.Session` and returns an `HTTPResponse`. `uripath` finds it
-through the `requests` entry of its `uripath.http_transports` group, which this
-distribution declares, so installing the distribution is all that is needed:
+`RequestsTransport` is an HTTP transport for `pathlib_next.http` (the contract is
+"HTTP requests" in the `pathlib_next` header): `send()` makes one request with a
+`requests.Session` and returns a `pathlib_next.http.HTTPResponse`.
+`pathlib_next.http` finds it through the `requests` entry of its
+`pathlib_next.http_transports` entry-point group, which this distribution
+declares, so installing the distribution is all that is needed:
 
-- `path.with_session(session, write_method="PUT", append_mode="rewrite",
-  **requests_args)` on an `http:`, `https:`, `dav:` or `davs:` path builds
-  `RequestsTransport(session, **requests_args)` (`headers` and `timeout` in
-  `requests_args` are the backend's, and `session=None` makes a new session).
-- `RepoBackend(session=..., **requests_args)`, the backend of `github:` and
-  `gitlab:`, builds one the same way.
-- `URIPATH_HTTP_TRANSPORT=requests` makes every backend that was given no
-  transport build `RequestsTransport()`.
+- `HTTPClient(RequestsTransport(session, **requests_args))` sends every request
+  of the client through the session; `session=None` makes a new session that the
+  transport closes. The client follows the redirects, and never closes a
+  transport it was given.
+- `PATHLIB_NEXT_HTTP_TRANSPORT=requests` makes every `HTTPClient` that was given
+  no transport build `RequestsTransport()`; so do
+  `pathlib_next.http.default_transport()` and
+  `pathlib_next.http.get_transport("requests")()`.
 
 Use it for what the built-in transport does not do: a session of your own with
 its mounted adapters, `auth` (basic, digest, NTLM, a token) and cookies;
@@ -62,7 +63,7 @@ and SOCKS proxies.
 - **`proxies`** — `None` leaves `requests` to read its session and the
   environment (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`). Otherwise
   an object that is indexed with the request URL (no fragment), as the
-  `proxies` of `uripath.schemes.HTTPTransport` is. The answer is `None` (no
+  `proxies` of `pathlib_next.http.HTTPTransport` is. The answer is `None` (no
   proxy: direct, whatever the session and the environment say), a proxy, or an
   iterable of them; a proxy is a `str` URL or an object with a `url` attribute
   (and optionally `username` and `password`, used when the URL carries none). `requests`
@@ -76,7 +77,7 @@ and SOCKS proxies.
   direct"; here both leave the decision to `requests`.
 - **A `socks4:`, `socks5:` or `socks5h:` proxy** needs PySocks (the `socks`
   extra); without it the request raises `OSError(EPROTONOSUPPORT)` naming
-  `uripath-http-requests[socks]`, and nothing is sent. `socks5h:` leaves the
+  `pathlib-next-requests[socks]`, and nothing is sent. `socks5h:` leaves the
   resolution of the host name to the proxy; `socks5:` resolves it first.
 - **`requests_args`** — keyword arguments passed to every `session.request()`:
   `verify`, `cert`, `auth`, `cookies`, `hooks`, ... `headers` are sent with
@@ -85,7 +86,7 @@ and SOCKS proxies.
   ignored.
 - **`send(method, url, *, headers, body=None, timeout, stream=False)`** is
   `HTTPTransport.send()`: `ValueError` before anything is sent for what
-  `uripath.transports.prepare_request()` refuses, one request and no redirect
+  `pathlib_next.http.prepare_request()` refuses, one request and no redirect
   followed (`allow_redirects=True` in `requests_args` changes nothing), and the
   response body read whole with `stream=False`. A reply below 200 is
   `OSError(EIO)` (`urllib3` skips only `100`).
@@ -95,8 +96,8 @@ and SOCKS proxies.
   server of the first request: its scheme, host and port. A request to any
   other server carries the `Authorization` it was given and none of those. An
   `auth` the session or `requests_args` hold wins over an `Authorization`
-  header on that first server. Redirects are followed by the `uripath` backend,
-  which drops `Authorization` when one leaves the server.
+  header on that first server. Redirects are followed by `HTTPClient`, which
+  drops `Authorization` when one leaves the server.
 - **Failures** are `TimeoutError`, `ConnectionError`, `ssl.SSLError`,
   `ValueError` (the request was not valid, or `requests` refused it) or
   `OSError(EIO)` (a reply that is not valid HTTP or is cut short, or any other
@@ -104,15 +105,24 @@ and SOCKS proxies.
   proxy URL with credentials, is never passed on, and the exception is not
   chained. `repr()` shows nothing of the session or the arguments.
 
-`uripath_http_requests.__version__` is a `str`.
+`pathlib_next_requests.__version__` is a `str`.
+
+## Checking the transport
+
+`pathlib_next` ships the tests that hold a transport to the promises of the
+built-in one. With this distribution and `pytest` installed:
+
+```
+python -m pathlib_next.http.testing --http-transports requests -q
+```
 
 ## Environment variables
 
-### `URIPATH_HTTP_TRANSPORT`
+### `PATHLIB_NEXT_HTTP_TRANSPORT`
 
-Read by `uripath`. `requests` makes `http(s):`, `dav(s):`, `github:`, `gitlab:`
-and `git:` build `RequestsTransport()` for a backend that was given no
-transport. `with_transport()` and `with_session()` do not read it.
+Read by `pathlib_next.http`. `requests` makes an `HTTPClient` that was given no
+transport build `RequestsTransport()`. The name is case-sensitive, and one that
+no installed distribution declares is `ValueError` naming the choices.
 
 ### `requests` variables
 
@@ -125,6 +135,6 @@ transport. `with_transport()` and `with_session()` do not read it.
 
 `RequestsTransport()` builds a `requests.Session` the moment it is constructed;
 a session it made is closed by `close()`, by leaving a `with` block, and when the
-transport is collected, so a transport you build is yours to close. A backend
-closes only a transport it built itself, which is why `with_session()` does not
-close one.
+transport is collected, so a transport you build is yours to close. An
+`HTTPClient` closes only a transport it built itself, which is why
+`HTTPClient(RequestsTransport(session))` does not close one.

@@ -11,12 +11,12 @@ import re
 
 import pytest
 
-import uripath_http_requests
-from http_wire import Wire
-from uripath_http_requests import RequestsTransport
+import pathlib_next_requests
+from pathlib_next_requests import RequestsTransport
+from transport_wire import Wire
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-PACKAGE = pathlib.Path(uripath_http_requests.__file__).resolve().parent
+PACKAGE = pathlib.Path(pathlib_next_requests.__file__).resolve().parent
 HEADER = PACKAGE / "AGENTS.md"
 README = REPO / "README.md"
 DOCUMENTS = [
@@ -96,18 +96,18 @@ def test_every_public_name_is_in_the_header_the_readme_and_an_api_page():
     api = "\n".join(
         p.read_text(encoding="utf-8") for p in DOCUMENTS if "api" in p.parts
     )
-    for name in uripath_http_requests.__all__:
+    for name in pathlib_next_requests.__all__:
         for label, text in (
             ("header", HEADER.read_text(encoding="utf-8")),
             ("README", README.read_text(encoding="utf-8")),
         ):
             assert re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text), (label, name)
         if name != "__version__":
-            assert f"uripath_http_requests.{name}" in api, name
+            assert f"pathlib_next_requests.{name}" in api, name
 
 
 def test_the_package_exports_the_class_and_the_version_only():
-    assert uripath_http_requests.__all__ == ["RequestsTransport", "__version__"]
+    assert pathlib_next_requests.__all__ == ["RequestsTransport", "__version__"]
 
 
 @pytest.mark.parametrize("document", DOCUMENTS, ids=lambda p: p.name)
@@ -119,16 +119,16 @@ def test_a_document_describes_the_package_as_it_is(document):
 def test_the_header_links_only_to_absolute_urls():
     text = HEADER.read_text(encoding="utf-8")
     assert re.findall(r"\]\((?!https?://)[^)]*\)", text) == []
-    for private in ("CHANGELOG.md", "docs/", "src/uripath_http_requests"):
+    for private in ("CHANGELOG.md", "docs/", "src/pathlib_next_requests"):
         assert private not in text
 
 
 def test_the_header_opens_as_the_standard_says():
     text = HEADER.read_text(encoding="utf-8")
-    assert text.startswith("# `uripath_http_requests` — public API header\n")
+    assert text.startswith("# `pathlib_next_requests` — public API header\n")
     opening = text.split("\n\n")[1]
     assert "ships inside the package" in opening and "self-contained" in opening
-    assert "<https://github.com/jose-pr/uripath-http-requests>" in opening
+    assert "<https://github.com/jose-pr/pathlib-next-requests>" in opening
 
 
 def test_the_readme_has_the_standard_sections_in_order():

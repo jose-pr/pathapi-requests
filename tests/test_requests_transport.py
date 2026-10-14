@@ -1,7 +1,7 @@
 """What a `requests.Session` gives a transport that the built-in one does not,
 against loopback servers: the caller's session and what it holds, `~/.netrc`,
 `REQUESTS_CA_BUNDLE`, and who closes the session. The promises every
-transport keeps are run from `uripath` by `test_uripath_suite.py`."""
+transport keeps are run by `test_transport_suite.py`."""
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ import ssl
 import pytest
 import requests
 
-from http_wire import Wire, make_authority, response
-from uripath_http_requests import RequestsTransport
+from pathlib_next_requests import RequestsTransport
+from transport_wire import Wire, make_authority, response
 
 TIMEOUT = (5, 5)
 

@@ -1,5 +1,5 @@
 """The packaging manifest: dependency bounds, the entry point that is how
-`uripath` finds the transport, and what the distributions leave out."""
+`pathlib_next.http` finds the transport, and what the distributions leave out."""
 
 from __future__ import annotations
 
@@ -51,18 +51,28 @@ def test_every_dependency_declares_a_ceiling(project):
     assert unbounded == []
 
 
-def test_the_runtime_dependencies_are_uripath_and_requests(project):
+def test_the_runtime_dependencies_are_pathlib_next_and_requests(project):
     names = [
         packaging_requirements.Requirement(spec).name
         for spec in project["project"]["dependencies"]
     ]
-    assert names == ["uripath", "requests"]
+    assert names == ["pathlib-next", "requests"]
 
 
-def test_the_transport_is_declared_for_uripath_to_find(project):
+def test_no_dependency_or_extra_requires_uripath(project):
+    specs = list(project["project"]["dependencies"])
+    for deps in project["project"]["optional-dependencies"].values():
+        specs += deps
+    names = [packaging_requirements.Requirement(spec).name for spec in specs]
+    assert [name for name in names if "uripath" in name.lower()] == []
+
+
+def test_the_transport_is_declared_for_pathlib_next_to_find(project):
     entry_points = project["project"]["entry-points"]
-    assert entry_points["uripath.http_transports"] == {
-        "requests": "uripath_http_requests:RequestsTransport"
+    assert entry_points == {
+        "pathlib_next.http_transports": {
+            "requests": "pathlib_next_requests:RequestsTransport"
+        }
     }
     assert "scripts" not in project["project"]
 
@@ -73,7 +83,7 @@ def test_the_one_extra_is_socks_and_dev_includes_it(project):
     assert [
         packaging_requirements.Requirement(spec).name for spec in extras["socks"]
     ] == ["requests"]
-    assert "uripath-http-requests[socks]" in extras["dev"]
+    assert "pathlib-next-requests[socks]" in extras["dev"]
 
 
 def test_distributions_leave_out_the_contributor_notes_and_agent_config(project):
