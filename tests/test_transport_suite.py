@@ -56,8 +56,7 @@ def test_the_suite_runs_the_tests_that_depend_on_the_transport_once_for_this_one
     result = _run("--collect-only", "-q", timeout=600)
     assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
     listed = [line for line in result.stdout.splitlines() if "::" in line]
-    shown = "
-".join(listed[:5] + ["..."] + listed[-5:]) + result.stderr[-1000:]
+    shown = "\n".join(listed[:5] + ["..."] + listed[-5:]) + result.stderr[-1000:]
     assert any("test_transport_send.py::" in line for line in listed), shown
     assert any("test_client_redirects.py::" in line for line in listed), shown
     kinds = [line.partition("[")[2].rstrip("]").split("-") for line in listed]
