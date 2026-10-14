@@ -36,6 +36,9 @@ built-in transport does not do, and it is documented at
   over its own transport run over this one
   (`python -m pathlib_next.http.testing --http-transports requests`).
 
+The URI paths of `uripath` use it too: with this distribution installed,
+`with_session()` and `PATHLIB_NEXT_HTTP_TRANSPORT=requests` send through it.
+
 ## Installation
 
 ```bash
