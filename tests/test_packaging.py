@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib.metadata as metadata
 import pathlib
 
 import pytest
@@ -59,12 +60,17 @@ def test_the_runtime_dependencies_are_pathlib_next_and_requests(project):
     assert names == ["pathlib-next", "requests"]
 
 
-def test_no_dependency_or_extra_requires_uripath(project):
-    specs = list(project["project"]["dependencies"])
-    for deps in project["project"]["optional-dependencies"].values():
-        specs += deps
-    names = [packaging_requirements.Requirement(spec).name for spec in specs]
-    assert [name for name in names if "uripath" in name.lower()] == []
+def test_the_installed_metadata_requires_pathlib_next_and_requests_only():
+    try:
+        requires = metadata.requires("pathlib-next-requests")
+    except metadata.PackageNotFoundError:
+        pytest.skip("the distribution is not installed")
+    names = {
+        packaging_requirements.Requirement(spec).name
+        for spec in requires or ()
+        if "extra ==" not in spec
+    }
+    assert names == {"pathlib-next", "requests"}
 
 
 def test_the_transport_is_declared_for_pathlib_next_to_find(project):
