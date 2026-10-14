@@ -1,0 +1,67 @@
+{
+  "schema": "pathlib-next-requests.bench/1",
+  "name": "baseline-local-0.10.0-py3.9-nt-amd64",
+  "source": "local",
+  "note": "local sanity run on the development machine; Windows x64 under emulation, CPython 3.9.13",
+  "created_utc": "2026-10-14T03:35:43+00:00",
+  "package": {
+    "name": "pathlib-next-requests",
+    "version": "0.10.0"
+  },
+  "dependencies": {
+    "pathlib-next": "0.10.0",
+    "requests": "2.32.5"
+  },
+  "git": {
+    "commit": "2403b876aea603a96ceb25929450d6a2015eaefb",
+    "dirty": false
+  },
+  "python": "3.9.13",
+  "interpreter": "CPython",
+  "platform": "win-amd64",
+  "processor": "ARMv8 (64-bit) Family 8 Model 2 Revision 201, Qualcomm Technologies Inc",
+  "metrics": {
+    "50 GETs of a 1 KiB file, builtin transport": {
+      "min_ms": 0.47372,
+      "median_ms": 0.483984,
+      "max_ms": 0.53311,
+      "samples": 5,
+      "calls_per_sample": 50
+    },
+    "1 GET of a 1 MiB file, builtin transport": {
+      "min_ms": 1.0617,
+      "median_ms": 1.1068,
+      "max_ms": 1.2234,
+      "samples": 5,
+      "calls_per_sample": 1
+    },
+    "20 PUTs of 1 KiB, builtin transport": {
+      "min_ms": 0.463635,
+      "median_ms": 0.495235,
+      "max_ms": 0.563275,
+      "samples": 5,
+      "calls_per_sample": 20
+    },
+    "50 GETs of a 1 KiB file, requests transport": {
+      "min_ms": 1.828478,
+      "median_ms": 2.026912,
+      "max_ms": 2.947124,
+      "samples": 5,
+      "calls_per_sample": 50
+    },
+    "1 GET of a 1 MiB file, requests transport": {
+      "min_ms": 3.7906,
+      "median_ms": 4.266,
+      "max_ms": 14.56,
+      "samples": 5,
+      "calls_per_sample": 1
+    },
+    "20 PUTs of 1 KiB, requests transport": {
+      "min_ms": 1.715725,
+      "median_ms": 1.910655,
+      "max_ms": 2.73114,
+      "samples": 5,
+      "calls_per_sample": 20
+    }
+  }
+}
