@@ -1,8 +1,8 @@
 # Benchmarks
 
-`bench.py` times the built-in transport of `uripath` and this package's
+`bench.py` times the built-in transport of `pathlib_next.http` and this package's
 `RequestsTransport` on the same requests: 50 GETs of a 1 KiB file, one GET of a
-1 MiB file and 20 PUTs of 1 KiB, through `HTTPURIPath.with_transport()`.
+1 MiB file and 20 PUTs of 1 KiB, through an `HTTPClient`.
 Nothing here contacts an external host: an in-process loopback server answers.
 
 ## Reproduce
@@ -29,10 +29,10 @@ runs from the same machine and interpreter. A run on a developer machine is a
 sanity check; performance claims in the changelog or release notes come from CI
 runs (`test.yml` with `benchmark` set).
 
-## Result schema (`uripath-http-requests.bench/1`)
+## Result schema (`pathlib-next-requests.bench/1`)
 
 One JSON object per run: `schema`, `name`, `source` (`"ci"` or `"local"`),
-`note`, `created_utc`, `package` (`name`, `version`), `dependencies` (`uripath`,
+`note`, `created_utc`, `package` (`name`, `version`), `dependencies` (`pathlib-next`,
 `requests`), `git` (`commit`, `dirty`; null outside a checkout), `python`,
 `interpreter`, `platform`, `processor`, and `metrics`: per case, `min_ms`,
 `median_ms`, `max_ms`, `samples` and `calls_per_sample`, in milliseconds per

@@ -1,6 +1,6 @@
-"""uripath-http-requests benchmark runner.
+"""pathlib-next-requests benchmark runner.
 
-Times the built-in transport of `uripath` and this one on the same requests
+Times the built-in transport of `pathlib_next.http` and this one on the same requests
 against an in-process loopback server. Run `python benchmarks/bench.py --help`
 for the options. `--save` writes the run as JSON into `benchmarks/results/`;
 the schema is in `benchmarks/README.md`.
@@ -25,7 +25,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-SCHEMA = "uripath-http-requests.bench/1"
+SCHEMA = "pathlib-next-requests.bench/1"
 BODY = b"x" * 1024
 LARGE = b"y" * (1 << 20)
 
@@ -51,26 +51,28 @@ class _Handler(http.server.BaseHTTPRequestHandler):
 
 
 def _cases(url, samples):
-    from uripath import transports
-    from uripath.schemes import HTTPURIPath
+    from pathlib_next.http import HTTPClient, get_transport
 
     results = {}
     for name in ("builtin", "requests"):
-        transport = transports.get(name)()
+        transport = get_transport(name)()
         try:
-            root = HTTPURIPath(url).with_transport(transport)
-            small, large = root / "small.bin", root / "large.bin"
-            small.read_bytes()
+            client = HTTPClient(transport)
+
+            def get(target):
+                return client.request("GET", url + target).read()
+
+            def put():
+                return client.request("PUT", url + "/small.bin", data=BODY).read()
+
+            get("/small.bin")
             cases = {
                 "50 GETs of a 1 KiB file": (
-                    lambda: [small.read_bytes() for _ in range(50)],
+                    lambda: [get("/small.bin") for _ in range(50)],
                     50,
                 ),
-                "1 GET of a 1 MiB file": (large.read_bytes, 1),
-                "20 PUTs of 1 KiB": (
-                    lambda: [small.write_bytes(BODY) for _ in range(20)],
-                    20,
-                ),
+                "1 GET of a 1 MiB file": (lambda: get("/large.bin"), 1),
+                "20 PUTs of 1 KiB": (lambda: [put() for _ in range(20)], 20),
             }
             for label, (run, calls) in cases.items():
                 taken = timeit.repeat(run, number=1, repeat=samples)
@@ -125,9 +127,9 @@ def main(argv=None) -> int:
     if not 1 <= args.samples <= 100:
         parser.error("--samples is between 1 and 100")
 
+    import pathlib_next
+    import pathlib_next_requests
     import requests
-    import uripath
-    import uripath_http_requests
 
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -141,7 +143,7 @@ def main(argv=None) -> int:
     for label, values in metrics.items():
         print(f"{label}: median {values['median_ms']:.3f} ms per call")
     if args.save:
-        version = uripath_http_requests.__version__
+        version = pathlib_next_requests.__version__
         python = f"py{sys.version_info.major}.{sys.version_info.minor}"
         system = f"{platform.system().lower()}-{platform.machine().lower()}"
         name = args.name or f"{version}-{python}-{system}"
@@ -153,9 +155,9 @@ def main(argv=None) -> int:
             "created_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(
                 timespec="seconds"
             ),
-            "package": {"name": "uripath-http-requests", "version": version},
+            "package": {"name": "pathlib-next-requests", "version": version},
             "dependencies": {
-                "uripath": uripath.__version__,
+                "pathlib-next": pathlib_next.__version__,
                 "requests": requests.__version__,
             },
             "git": _git(),

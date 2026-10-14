@@ -2,7 +2,7 @@
 
 The script starts a small server on the loopback interface, so it needs no
 network: the session carries a header and an adapter that counts requests, and
-`with_session()` sends every request of the path through it.
+an `HTTPClient` over `RequestsTransport` sends every request through it.
 """
 
 from __future__ import annotations
@@ -11,7 +11,8 @@ import http.server
 import threading
 
 import requests
-from uripath import URIPath
+from pathlib_next.http import HTTPClient
+from pathlib_next_requests import RequestsTransport
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -50,11 +51,11 @@ def main() -> None:
         with requests.Session() as session:
             session.headers["X-Team"] = "storage"
             session.mount("http://", Counting())
-            path = URIPath(f"http://127.0.0.1:{server.server_port}/notes.txt")
-            path = path.with_session(session, timeout=(3, 30))
-            print(path.read_text(), end="")
-            path.write_text("replaced through the session\n")
-            print(path.read_text(), end="")
+            url = f"http://127.0.0.1:{server.server_port}/notes.txt"
+            with HTTPClient(RequestsTransport(session), timeout=(3, 30)) as client:
+                print(client.request("GET", url).read().decode(), end="")
+                client.request("PUT", url, data=b"replaced through the session\n")
+                print(client.request("GET", url).read().decode(), end="")
             print("requests sent through the session:", Counting.sent)
     finally:
         server.shutdown()
