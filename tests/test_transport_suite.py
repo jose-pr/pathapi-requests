@@ -53,7 +53,11 @@ def test_the_transport_suite_of_pathlib_next_passes_over_the_requests_transport(
 
 
 def test_the_suite_runs_the_tests_that_depend_on_the_transport_once_for_this_one():
-    result = _run("--collect-only", "-q", timeout=600)
+    # Node ids are relative to the root directory; on a runner where the suite and
+    # the checkout are on different drives they would lose their file part.
+    from pathlib_next.http.testing import suite_directory
+
+    result = _run("--collect-only", "-q", f"--rootdir={suite_directory()}", timeout=600)
     assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
     listed = [line for line in result.stdout.splitlines() if "::" in line]
     shown = "\n".join(listed[:5] + ["..."] + listed[-5:]) + result.stderr[-1000:]
